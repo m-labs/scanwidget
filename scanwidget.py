@@ -5,11 +5,12 @@ from ticker import Ticker
 class ScanAxis(QtWidgets.QWidget):
     sigZoom = QtCore.pyqtSignal(float, int)
 
-    def __init__(self):
+    def __init__(self, zoomFactor):
         QtWidgets.QWidget.__init__(self)
         self.proxy = None
         self.sizePolicy().setControlType(QtWidgets.QSizePolicy.ButtonBox)
         self.ticker = Ticker()
+        self.zoomFactor = zoomFactor
 
     def paintEvent(self, ev):
         painter = QtGui.QPainter(self)
@@ -38,7 +39,7 @@ class ScanAxis(QtWidgets.QWidget):
     def wheelEvent(self, ev):
         y = ev.angleDelta().y()
         if y:
-            z = 1.05**(y / 120.)
+            z = self.zoomFactor**(y / 120.)
             # Remove the slider-handle shift correction, b/c none of the other
             # widgets know about it. If we have the mouse directly over a tick
             # during a zoom, it should appear as if we are doing zoom relative
@@ -343,13 +344,14 @@ class ScanProxy(QtCore.QObject):
     sigMinMoved = QtCore.pyqtSignal(float)
     sigMaxMoved = QtCore.pyqtSignal(float)
 
-    def __init__(self, slider, axis):
+    def __init__(self, slider, axis, rangeFactor):
         QtCore.QObject.__init__(self)
         self.axis = axis
         self.slider = slider
         self.realMin = 0
         self.realMax = 0
         self.numPoints = 10
+        self.rangeFactor = rangeFactor
 
         # Transform that maps the spinboxes to a pixel position on the
         # axis. 0 to axis.width() exclusive indicate positions which will be
@@ -412,9 +414,6 @@ class ScanProxy(QtCore.QObject):
         self.sigMinMoved.emit(self.rangeToReal(rangeVal))
 
     def handleZoom(self, zoomFactor, mouseXPos):
-        # We need to figure out what new value is to be centered in the axis
-        # display.
-        # Halfway between the mouse zoom and the oldCenter should be fine.
         newScale = self.realToPixelTransform.m11() * zoomFactor
         refReal = self.pixelToReal(mouseXPos)
         newLeft = refReal - mouseXPos/newScale
@@ -425,8 +424,11 @@ class ScanProxy(QtCore.QObject):
 
     def zoomToFit(self):
         currRangeReal = abs(self.realMax - self.realMin)
-        newScale = self.slider.effectiveWidth()/(3*currRangeReal)
-        newLeft = self.realMin - self.slider.effectiveWidth()/(3*newScale)
+        assert self.rangeFactor > 2
+        proportion = self.rangeFactor/(self.rangeFactor - 2)
+        newScale = self.slider.effectiveWidth()/(proportion*currRangeReal)
+        newLeft = self.realMin - self.slider.effectiveWidth() \
+            / (self.rangeFactor*newScale)
         self.realToPixelTransform = self.calculateNewRealToPixel(
             newLeft, newScale)
         self.printTransform()
@@ -435,13 +437,14 @@ class ScanProxy(QtCore.QObject):
         self.axis.update()
 
     def fitToView(self):
-        newMin = self.pixelToReal((1.0 / 3.0) * self.slider.effectiveWidth())
-        newMax = self.pixelToReal((2.0 / 3.0) * self.slider.effectiveWidth())
+        lowRange = 1.0/self.rangeFactor
+        highRange = (self.rangeFactor - 1)/self.rangeFactor
+        newMin = self.pixelToReal(lowRange * self.slider.effectiveWidth())
+        newMax = self.pixelToReal(highRange * self.slider.effectiveWidth())
         sliderRange = self.slider.maximum() - self.slider.minimum()
         assert sliderRange > 0
         self.moveMin(newMin)
         self.moveMax(newMax)
-        # self.slider.setUpperPosition(round((2.0 / 3.0) * sliderRange))
         # Signals won't fire unless slider was actually grabbed, so
         # manually update.
         self.handleMaxMoved(self.slider.maxVal)
@@ -488,13 +491,13 @@ class ScanWidget(QtWidgets.QWidget):
     sigMinMoved = QtCore.pyqtSignal(float)
     sigMaxMoved = QtCore.pyqtSignal(float)
 
-    def __init__(self):
+    def __init__(self, zoomFactor=0.05, rangeFactor=6):
         QtWidgets.QWidget.__init__(self)
         slider = ScanSlider()
-        axis = ScanAxis()
+        axis = ScanAxis(zoomFactor)
         zoomFitButton = QtWidgets.QPushButton("View Range")
         fitViewButton = QtWidgets.QPushButton("Snap Range")
-        self.proxy = ScanProxy(slider, axis)
+        self.proxy = ScanProxy(slider, axis, rangeFactor)
         axis.proxy = self.proxy
 
         # Layout.
