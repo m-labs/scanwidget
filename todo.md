@@ -13,15 +13,17 @@
 ## To Implement
 * Implement slider hiding when zoom causes sliders to disappear.
 * Add number of points functionality
-    * visualize on axis
+    * Add tick mark visualization on axis for number of points.
     * change on shift-wheelEvent
 * Drag modes:
     * drag axis: move axis origin
     * shift-drag axis: move both sliders (and thus all scanned points, analogous to shift-wheelEvent)
 * Convert FitToView and ZoomToFit to context menu, add Reset.
-* Add tick mark visualization for number of points.
-* Axis widget should capture scroll events from slider.
+* Axis widget should capture scroll events from sliders.
+* To be discussed: drag and shift-drag on the groove
 
 ## Improvements
-* When dragging a slider, it should snap (-> spinboxes) to "nice" values. The
-  Something like rounding to Ticker().step() should be sufficient.
+* When dragging a slider, it should snap (-> spinboxes) to "nice" values.
+  Something like rounding to Ticker(n=handlePositions).step(a,b) should be good.
+* Spinbox buttons should increment/decrement by Ticker(n=handlePositions).step(a,b)
+  as well
