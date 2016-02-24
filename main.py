@@ -1,12 +1,13 @@
 import asyncio
 import atexit
-import scanwidget
 
 from quamash import QApplication, QEventLoop, QtCore, QtWidgets
 
+import scanwidget
+from scientificspinbox import ScientificSpinBox
+
 
 class MainWindow(QtWidgets.QMainWindow):
-
     def __init__(self, app, server):
         QtWidgets.QMainWindow.__init__(self)
         self.exit_request = asyncio.Event()
@@ -35,15 +36,13 @@ def main():
     scanner = scanwidget.ScanWidget()
     layout.addWidget(scanner, 0, 0, 1, -1)
 
-    spinboxes = [QtWidgets.QDoubleSpinBox(),
+    spinboxes = [ScientificSpinBox(),
                  QtWidgets.QSpinBox(),
-                 QtWidgets.QDoubleSpinBox()]
-    for s in spinboxes[0], spinboxes[2]:
-        s.setDecimals(13)
-        s.setMaximum(float("Inf"))
-        s.setMinimum(float("-Inf"))
+                 ScientificSpinBox()]
     spinboxes[0].setStyleSheet("QDoubleSpinBox {color:blue}")
     spinboxes[2].setStyleSheet("QDoubleSpinBox {color:red}")
+    spinboxes[0].setMinimumSize(100, 0)
+    spinboxes[2].setMinimumSize(100, 0)
     for s in spinboxes[1:2]:
         s.setMinimum(1)
         s.setValue(10)
