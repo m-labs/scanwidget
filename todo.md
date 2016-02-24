@@ -1,5 +1,4 @@
 ## To Fix (Bugs)
-* After widget resize, ViewRange and SnapRange are not idempotent until SnapRange clicked twice in succession.
 * Lying about the slider-to-pixel transform to the proxy can cause infinite signal recursion when the spinboxes are updated.
 * At large zooms, the sliders start taking the wrong positions due to floating point errors?
 * Check that recalculating the zoom transform in fact has a relative error of 10^-15, not absolute error. If latter, rethink transform.

@@ -446,9 +446,11 @@ class ScanProxy(QtCore.QObject):
         self.moveMin(newMin)
         self.moveMax(newMax)
         # Signals won't fire unless slider was actually grabbed, so
-        # manually update.
-        self.handleMaxMoved(self.slider.maxVal)
-        self.handleMinMoved(self.slider.minVal)
+        # manually update so the spinboxes know that knew values were set.
+        # self.realMax/Min will be updated as a consequence of ValueChanged
+        # signal in spinboxes.
+        self.sigMaxMoved.emit(newMax)
+        self.sigMinMoved.emit(newMin)
 
     def eventFilter(self, obj, ev):
         if obj != self.axis:
