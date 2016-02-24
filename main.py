@@ -35,21 +35,26 @@ def main():
     scanner = scanwidget.ScanWidget()
     layout.addWidget(scanner, 0, 0, 1, -1)
 
-    spinboxes = [QtWidgets.QDoubleSpinBox(), QtWidgets.QDoubleSpinBox(),
-                 QtWidgets.QSpinBox()]
-    for s in spinboxes:
-        if type(s) is QtWidgets.QDoubleSpinBox:
-            s.setDecimals(13)
-            s.setMaximum(float("Inf"))
-            s.setMinimum(float("-Inf"))
-        else:
-            s.setMinimum(1)
-            s.setValue(10)
+    spinboxes = [QtWidgets.QDoubleSpinBox(),
+                 QtWidgets.QSpinBox(),
+                 QtWidgets.QDoubleSpinBox()]
+    for s in spinboxes[0], spinboxes[2]:
+        s.setDecimals(13)
+        s.setMaximum(float("Inf"))
+        s.setMinimum(float("-Inf"))
+    spinboxes[0].setStyleSheet("QDoubleSpinBox {color:blue}")
+    spinboxes[2].setStyleSheet("QDoubleSpinBox {color:red}")
+    for s in spinboxes[1:2]:
+        s.setMinimum(1)
+        s.setValue(10)
+    labels = [QtWidgets.QLabel(l) for l in "Start Stop Points".split()]
+    labels[0].setStyleSheet("QLabel {color:blue}")
+    labels[1].setStyleSheet("QLabel {color:red}")
 
-    for (col, w) in enumerate([QtWidgets.QLabel("Start"), spinboxes[0],
-                               QtWidgets.QLabel("Stop"), spinboxes[1],
-                               QtWidgets.QLabel("Points"), spinboxes[2]]):
-        layout.addWidget(w, 1, col)
+    for i, (l, s) in enumerate(zip(labels, spinboxes)):
+        layout.addWidget(s, 1, i)
+        # layout.addWidget(l, 1, i*2)
+        # layout.addWidget(s, 1, i*2 + 1)
 
     scanner.sigMinMoved.connect(spinboxes[0].setValue)
     scanner.sigMaxMoved.connect(spinboxes[1].setValue)

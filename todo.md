@@ -9,6 +9,8 @@
 * Change slider behavior so that sliders can cross/overlap.
     * Rename Min/Max (and Lower/Upper?) terminology to Start/Stop
 * Make zoom, (1/n, (n-1)/n) placement, user-settable, exposed in ScanWidget attributes (just programmatically, no need for runtime configurability)
+* When widget is large vertically, the prefix (offset and magnitude) are
+  painted far away from the axis
 
 ## To Implement
 * Implement slider hiding when zoom causes sliders to disappear.

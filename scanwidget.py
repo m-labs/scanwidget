@@ -54,8 +54,8 @@ class ScanSlider(QtWidgets.QSlider):
     sigMinMoved = QtCore.pyqtSignal(int)
     sigMaxMoved = QtCore.pyqtSignal(int)
     noSlider, minSlider, maxSlider = range(3)
-    maxStyle = "QSlider::handle::horizontal {background:#E00000}"
-    minStyle = "QSlider::handle::horizontal {background:#0000E0}"
+    maxStyle = "QSlider::handle::horizontal {background:red}"
+    minStyle = "QSlider::handle::horizontal {background:blue}"
 
     def __init__(self):
         QtWidgets.QSlider.__init__(self, QtCore.Qt.Horizontal)
