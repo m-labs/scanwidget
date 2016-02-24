@@ -493,7 +493,7 @@ class ScanWidget(QtWidgets.QWidget):
     sigMinMoved = QtCore.pyqtSignal(float)
     sigMaxMoved = QtCore.pyqtSignal(float)
 
-    def __init__(self, zoomFactor=0.05, rangeFactor=6):
+    def __init__(self, zoomFactor=1.05, rangeFactor=6):
         QtWidgets.QWidget.__init__(self)
         slider = ScanSlider()
         axis = ScanAxis(zoomFactor)
