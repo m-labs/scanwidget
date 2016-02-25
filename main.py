@@ -34,15 +34,16 @@ def main():
     layout = QtWidgets.QGridLayout()
     container.setLayout(layout)
     scanner = scanwidget.ScanWidget()
-    layout.addWidget(scanner, 0, 0, 1, -1)
+    scanner.setMinimumSize(300, 0)
+    layout.addWidget(scanner, 0, 0, -1, 1)
 
     spinboxes = [ScientificSpinBox(),
                  QtWidgets.QSpinBox(),
                  ScientificSpinBox()]
     spinboxes[0].setStyleSheet("QDoubleSpinBox {color:blue}")
     spinboxes[2].setStyleSheet("QDoubleSpinBox {color:red}")
-    spinboxes[0].setMinimumSize(100, 0)
-    spinboxes[2].setMinimumSize(100, 0)
+    spinboxes[0].setMinimumSize(110, 0)
+    spinboxes[2].setMinimumSize(110, 0)
     for s in spinboxes[1:2]:
         s.setMinimum(1)
         s.setValue(10)
@@ -51,7 +52,7 @@ def main():
     labels[1].setStyleSheet("QLabel {color:red}")
 
     for i, (l, s) in enumerate(zip(labels, spinboxes)):
-        layout.addWidget(s, 1, i)
+        layout.addWidget(s, i, 1)
         # layout.addWidget(l, 1, i*2)
         # layout.addWidget(s, 1, i*2 + 1)
 
