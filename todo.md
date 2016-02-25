@@ -17,7 +17,14 @@
     * change on shift-wheelEvent
 * Drag modes:
     * drag axis: move axis origin
+    * drag groove: move axis origin
+    * drag handle: move handle (as it is now)
     * shift-drag axis: move both sliders (and thus all scanned points, analogous to shift-wheelEvent)
+    * shift-drag groove: move both sliders (and thus all points)
+    * shift-drag handle: nothing
+    * wheel on groove: zoom axis:
+        * sidenote: the behavior that could be expected from a single handle, where wheel moves "the" handle does not work here. it might be better to do nothing than something that is unexpected
+    * wheel on handle: nothing (as above)
 * Convert FitToView and ZoomToFit to context menu, add Reset.
 * Axis widget should capture scroll events from sliders.
 * To be discussed: drag and shift-drag on the groove
