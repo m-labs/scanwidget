@@ -424,6 +424,10 @@ class ScanProxy(QtCore.QObject):
     def handleMinMoved(self, rangeVal):
         self.sigMinMoved.emit(self.rangeToReal(rangeVal))
 
+    def handleNumPoints(self, val):
+        self.numPoints = val
+        self.axis.update()
+
     def handleZoom(self, zoomFactor, mouseXPos):
         newScale = self.realToPixelTransform.m11() * zoomFactor
         refReal = self.pixelToReal(mouseXPos)
@@ -504,6 +508,7 @@ class ScanProxy(QtCore.QObject):
 class ScanWidget(QtWidgets.QWidget):
     sigMinMoved = QtCore.pyqtSignal(float)
     sigMaxMoved = QtCore.pyqtSignal(float)
+    sigNumChanged = QtCore.pyqtSignal(int)
 
     def __init__(self, zoomFactor=1.05, rangeFactor=6):
         QtWidgets.QWidget.__init__(self)
@@ -544,7 +549,7 @@ class ScanWidget(QtWidgets.QWidget):
         self.proxy.moveMin(val)
 
     def setNumPoints(self, val):
-        pass
+        self.proxy.handleNumPoints(val)
 
     def zoomToFit(self):
         self.proxy.zoomToFit()
