@@ -410,11 +410,13 @@ class ScanProxy(QtCore.QObject):
         sliderX = self.realToRange(val)
         self.slider.setUpperPosition(sliderX)
         self.realMax = val
+        self.axis.update()  # Number of points ticks changed positions.
 
     def moveMin(self, val):
         sliderX = self.realToRange(val)
         self.slider.setLowerPosition(sliderX)
         self.realMin = val
+        self.axis.update()
 
     def handleMaxMoved(self, rangeVal):
         self.sigMaxMoved.emit(self.rangeToReal(rangeVal))
@@ -454,12 +456,11 @@ class ScanProxy(QtCore.QObject):
         newMax = self.pixelToReal(highRange * self.slider.effectiveWidth())
         sliderRange = self.slider.maximum() - self.slider.minimum()
         assert sliderRange > 0
-        self.moveMin(newMin)
-        self.moveMax(newMax)
         # Signals won't fire unless slider was actually grabbed, so
         # manually update so the spinboxes know that knew values were set.
-        # self.realMax/Min will be updated as a consequence of ValueChanged
-        # signal in spinboxes.
+        # self.realMax/Min and the sliders themselves will be updated as a
+        # consequence of ValueChanged signal in spinboxes. The slider widget
+        # has guards against recursive signals in setSpan().
         self.sigMaxMoved.emit(newMax)
         self.sigMinMoved.emit(newMin)
 
