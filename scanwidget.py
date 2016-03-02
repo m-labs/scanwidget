@@ -517,6 +517,7 @@ class ScanWidget(QtWidgets.QWidget):
         fitViewButton = QtWidgets.QPushButton("Snap Range")
         self.proxy = ScanProxy(slider, axis, rangeFactor)
         axis.proxy = self.proxy
+        slider.setMaximum(1023)
 
         # Layout.
         layout = QtWidgets.QGridLayout()
