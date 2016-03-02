@@ -21,20 +21,29 @@ class ScanAxis(QtWidgets.QWidget):
         # on the spinboxes.
         painter.translate(self.proxy.slider.handleWidth()/2, self.height() - 5)
         painter.drawLine(0, 0, self.width(), 0)
-        realMin = self.proxy.pixelToReal(0)
-        realMax = self.proxy.pixelToReal(self.width())
+        realLeft = self.proxy.pixelToReal(0)
+        realRight = self.proxy.pixelToReal(self.width())
 
-        ticks, prefix, labels = self.ticker(realMin, realMax)
+        ticks, prefix, labels = self.ticker(realLeft, realRight)
         for t, l in zip(ticks, labels):
             t = self.proxy.realToPixel(t)
             textCenter = (len(l)/2.0)*avgCharWidth
             painter.drawLine(t, 5, t, -5)
             painter.drawText(t - textCenter, -10, l)
+
+        painter.save()
+        painter.setPen(QtGui.QColor(QtCore.Qt.green))
+        sliderMinPixel = self.proxy.realToPixel(self.proxy.realMin)
+        sliderMaxPixel = self.proxy.realToPixel(self.proxy.realMax)
+        markInc = (sliderMaxPixel - sliderMinPixel) / self.proxy.numPoints
+        for p in range(self.proxy.numPoints + 1):
+            markX = sliderMinPixel + int(p*markInc)
+            painter.drawLine(markX, 0, markX, 5)
+
+        painter.restore()
         painter.resetTransform()
         painter.drawText(0, 10, prefix)
-        # TODO:
-        # QtWidgets.QWidget.paintEvent(self, ev)?
-        # ev.accept() ?
+        ev.accept()
 
     def wheelEvent(self, ev):
         y = ev.angleDelta().y()
@@ -434,7 +443,9 @@ class ScanProxy(QtCore.QObject):
         self.printTransform()
         self.moveMax(self.realMax)
         self.moveMin(self.realMin)
-        self.axis.update()
+        self.axis.update()  # Axis normally takes care to update itself during
+        # zoom. In this code path however, the zoom didn't arrive via the axis
+        # widget, so we need to notify manually.
 
     def fitToView(self):
         lowRange = 1.0/self.rangeFactor
