@@ -381,7 +381,13 @@ class ScanProxy(QtCore.QObject):
 
     # pixel vals for sliders: 0 to slider_width - 1
     def realToPixel(self, val):
-        return (QtCore.QPointF(val, 0) * self.realToPixelTransform).x()
+        rawVal = (QtCore.QPointF(val, 0) * self.realToPixelTransform).x()
+        # Clamp pixel values to 32 bits, b/c Qt will otherwise wrap values.
+        if rawVal < -(2**31):
+            rawVal = -(2**31)
+        elif rawVal > (2**31 - 1):
+            rawVal = (2**31 - 1)
+        return rawVal
 
     # Get a point from pixel units to what the sliders display.
     def pixelToReal(self, val):

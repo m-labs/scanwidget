@@ -1,5 +1,4 @@
 ## To Fix (Bugs)
-* At large zooms, the sliders start taking the wrong positions due to floating point errors?
 * Check that recalculating the zoom transform in fact has a relative error of 10^-15, not absolute error. If latter, rethink transform.
 * Remove asserts (or catch AssertionFailure) and just refuse to honor zooms at some point.
 
