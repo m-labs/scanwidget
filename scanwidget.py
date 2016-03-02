@@ -41,8 +41,7 @@ class ScanAxis(QtWidgets.QWidget):
             painter.drawLine(markX, 0, markX, 5)
 
         painter.restore()
-        painter.resetTransform()
-        painter.drawText(0, 10, prefix)
+        painter.drawText(0, -25, prefix)
         ev.accept()
 
     def wheelEvent(self, ev):
