@@ -120,9 +120,11 @@ class ScanSlider(QtWidgets.QSlider):
         # For historical reasons right() returns left()+width() - 1
         # x() is equivalent to left().
         sliderMax = gr.right() - sliderLength + 1
-        return QtWidgets.QStyle.sliderValueFromPosition(
+
+        rangeVal = QtWidgets.QStyle.sliderValueFromPosition(
             self.minimum(), self.maximum(), pos - sliderMin,
             sliderMax - sliderMin, opt.upsideDown)
+        return rangeVal
 
     def rangeValueToPixelPos(self, val):
         opt = QtWidgets.QStyleOptionSlider()
@@ -179,6 +181,17 @@ class ScanSlider(QtWidgets.QSlider):
     def handleMousePress(self, pos, control, val, handle):
         opt = QtWidgets.QStyleOptionSlider()
         self.initHandleStyleOption(opt, handle)
+        minAtEdges = (handle == ScanSlider.minSlider and
+                      (self.minVal == self.minimum() or
+                       self.minVal == self.maximum()))
+        maxAtEdges = (handle == ScanSlider.maxSlider and
+                      (self.maxVal == self.minimum() or
+                       self.maxVal == self.maximum()))
+
+        # If chosen slider at edge, treat it as non-interactive.
+        if minAtEdges or maxAtEdges:
+            return QtWidgets.QStyle.SC_None
+
         oldControl = control
         control = self.style().hitTestComplexControl(
             QtWidgets.QStyle.CC_Slider, opt, pos, self)
@@ -216,6 +229,8 @@ class ScanSlider(QtWidgets.QSlider):
         self.setSpan(self.minVal, val)
 
     def setSpan(self, lower, upper):
+        # TODO: Is bound() necessary? QStyle::sliderPositionFromValue appears
+        # to clamp already.
         def bound(min, curr, max):
             if curr < min:
                 return min
@@ -231,12 +246,9 @@ class ScanSlider(QtWidgets.QSlider):
             if low != self.minVal:
                 self.minVal = low
                 self.minPos = low
-                # emit
             if high != self.maxVal:
                 self.maxVal = high
                 self.maxPos = high
-                # emit
-            # emit spanChanged
             self.update()
 
     def setLowerPosition(self, val):
@@ -305,11 +317,9 @@ class ScanSlider(QtWidgets.QSlider):
                 self.firstMovement = False
 
         if self.lowerPressed == QtWidgets.QStyle.SC_SliderHandle:
-            newPos = min(newPos, self.maxVal)
             self.setLowerPosition(newPos)
 
         if self.upperPressed == QtWidgets.QStyle.SC_SliderHandle:
-            newPos = max(newPos, self.minVal)
             self.setUpperPosition(newPos)
 
         ev.accept()
@@ -342,8 +352,13 @@ class ScanSlider(QtWidgets.QSlider):
         painter.drawComplexControl(QtWidgets.QStyle.CC_Slider, opt)
 
         # Handles
-        self.drawHandle(minPainter, ScanSlider.minSlider)
-        self.drawHandle(maxPainter, ScanSlider.maxSlider)
+        # Qt will snap sliders to 0 or maximum() if given a desired pixel
+        # location outside the mapped range. So we manually just don't draw
+        # the handles if they are at 0 or max.
+        if self.minVal > 0 and self.minVal < 1023:
+            self.drawHandle(minPainter, ScanSlider.minSlider)
+        if self.maxVal > 0 and self.maxVal < 1023:
+            self.drawHandle(maxPainter, ScanSlider.maxSlider)
 
 
 # real (Sliders) => pixel (one pixel movement of sliders would increment by X)
@@ -444,10 +459,15 @@ class ScanProxy(QtCore.QObject):
 
     def zoomToFit(self):
         currRangeReal = abs(self.realMax - self.realMin)
+        # Slider closest to the left should be used to find the new axis left.
+        if self.realMax < self.realMin:
+            refSlider = self.realMax
+        else:
+            refSlider = self.realMin
         assert self.rangeFactor > 2
         proportion = self.rangeFactor/(self.rangeFactor - 2)
         newScale = self.slider.effectiveWidth()/(proportion*currRangeReal)
-        newLeft = self.realMin - self.slider.effectiveWidth() \
+        newLeft = refSlider - self.slider.effectiveWidth() \
             / (self.rangeFactor*newScale)
         self.realToPixelTransform = self.calculateNewRealToPixel(
             newLeft, newScale)

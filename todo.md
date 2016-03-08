@@ -3,11 +3,9 @@
 * Remove asserts (or catch AssertionFailure) and just refuse to honor zooms at some point.
 
 ## To Modify (Not technically broken, but needs to be changed on request)
-* Change slider behavior so that sliders can cross/overlap.
-    * Rename Min/Max (and Lower/Upper?) terminology to Start/Stop
+* Rename Min/Max (and Lower/Upper?) terminology to Start/Stop
 
 ## To Implement
-* Implement slider hiding when zoom causes sliders to disappear.
 * Add number of points functionality
     * change on shift-wheelEvent
 * Drag modes:
