@@ -3,7 +3,6 @@
 * Remove asserts (or catch AssertionFailure) and just refuse to honor zooms at some point.
 
 ## To Modify (Not technically broken, but needs to be changed on request)
-* Rename Min/Max (and Lower/Upper?) terminology to Start/Stop
 
 ## To Implement
 * Add number of points functionality

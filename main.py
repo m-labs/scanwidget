@@ -57,12 +57,12 @@ def main():
         # layout.addWidget(l, 1, i*2)
         # layout.addWidget(s, 1, i*2 + 1)
 
-    scanner.sigMinMoved.connect(spinboxes[0].setValue)
+    scanner.sigStartMoved.connect(spinboxes[0].setValue)
     scanner.sigNumChanged.connect(spinboxes[1].setValue)
-    scanner.sigMaxMoved.connect(spinboxes[2].setValue)
-    spinboxes[0].valueChanged.connect(scanner.setMin)
+    scanner.sigStopMoved.connect(spinboxes[2].setValue)
+    spinboxes[0].valueChanged.connect(scanner.setStart)
     spinboxes[1].valueChanged.connect(scanner.setNumPoints)
-    spinboxes[2].valueChanged.connect(scanner.setMax)
+    spinboxes[2].valueChanged.connect(scanner.setStop)
 
     win.setCentralWidget(container)
     win.show()
