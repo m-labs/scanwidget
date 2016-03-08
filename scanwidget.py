@@ -1,5 +1,6 @@
 from PyQt5 import QtGui, QtCore, QtWidgets
 from ticker import Ticker
+from numpy import linspace
 
 
 class ScanAxis(QtWidgets.QWidget):
@@ -37,10 +38,11 @@ class ScanAxis(QtWidgets.QWidget):
         painter.setPen(QtGui.QColor(QtCore.Qt.green))
         sliderStartPixel = self.proxy.realToPixel(self.proxy.realStart)
         sliderStopPixel = self.proxy.realToPixel(self.proxy.realStop)
-        markInc = (sliderStopPixel - sliderStartPixel) / self.proxy.numPoints
-        for p in range(self.proxy.numPoints + 1):
-            markX = sliderStartPixel + int(p*markInc)
-            painter.drawLine(markX, 0, markX, 5)
+        pixels = linspace(sliderStartPixel, sliderStopPixel,
+            self.proxy.numPoints)
+        for p in pixels:
+            p_int = int(p)
+            painter.drawLine(p_int, 0, p_int, 5)
 
         painter.restore()
         painter.drawText(0, -25, prefix)
@@ -483,7 +485,8 @@ class ScanProxy(QtCore.QObject):
             refSlider = self.realStop
         else:
             refSlider = self.realStart
-        assert self.rangeFactor > 2
+        if self.rangeFactor <= 2:
+            return  # Ill-formed snap range- do nothing.
         proportion = self.rangeFactor/(self.rangeFactor - 2)
         newScale = self.slider.effectiveWidth()/(proportion*currRangeReal)
         newLeft = refSlider - self.slider.effectiveWidth() \
@@ -503,26 +506,26 @@ class ScanProxy(QtCore.QObject):
         newStart = self.pixelToReal(lowRange * self.slider.effectiveWidth())
         newStop = self.pixelToReal(highRange * self.slider.effectiveWidth())
         sliderRange = self.slider.maximum() - self.slider.minimum()
-        assert sliderRange > 0
         # Signals won't fire unless slider was actually grabbed, so
         # manually update so the spinboxes know that knew values were set.
         # self.realStop/Start and the sliders themselves will be updated as a
         # consequence of ValueChanged signal in spinboxes. The slider widget
         # has guards against recursive signals in setSpan().
-        self.sigStopMoved.emit(newStop)
-        self.sigStartMoved.emit(newStart)
+        if sliderRange > 0:
+            self.sigStopMoved.emit(newStop)
+            self.sigStartMoved.emit(newStart)
 
     def eventFilter(self, obj, ev):
         if obj != self.axis:
             return False
         if ev.type() != QtCore.QEvent.Resize:
             return False
-        oldLeft = self.pixelToReal(0)
         if ev.oldSize().isValid():
+            oldLeft = self.pixelToReal(0)
             refWidth = ev.oldSize().width() - self.slider.handleWidth()
             refRight = self.pixelToReal(refWidth)
             newWidth = ev.size().width() - self.slider.handleWidth()
-            assert refRight > oldLeft
+            # assert refRight > oldLeft
             newScale = newWidth/(refRight - oldLeft)
         else:
             # TODO: self.axis.width() is invalid during object
