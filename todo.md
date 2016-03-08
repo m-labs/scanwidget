@@ -5,8 +5,6 @@
 ## To Modify (Not technically broken, but needs to be changed on request)
 
 ## To Implement
-* Add number of points functionality
-    * change on shift-wheelEvent
 * Drag modes:
     * drag axis: move axis origin
     * drag groove: move axis origin

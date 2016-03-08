@@ -4,6 +4,7 @@ from ticker import Ticker
 
 class ScanAxis(QtWidgets.QWidget):
     sigZoom = QtCore.pyqtSignal(float, int)
+    sigPoints = QtCore.pyqtSignal(int)
 
     def __init__(self, zoomFactor):
         QtWidgets.QWidget.__init__(self)
@@ -48,13 +49,19 @@ class ScanAxis(QtWidgets.QWidget):
     def wheelEvent(self, ev):
         y = ev.angleDelta().y()
         if y:
-            z = self.zoomFactor**(y / 120.)
-            # Remove the slider-handle shift correction, b/c none of the other
-            # widgets know about it. If we have the mouse directly over a tick
-            # during a zoom, it should appear as if we are doing zoom relative
-            # to the ticks which live in axis pixel-space, not slider
-            # pixel-space.
-            self.sigZoom.emit(z, ev.x() - self.proxy.slider.handleWidth()/2)
+            if ev.modifiers() & QtCore.Qt.ShiftModifier:
+                # If shift+scroll, modify number of points.
+                z = int(y / 120.)
+                self.sigPoints.emit(z)
+            else:
+                z = self.zoomFactor**(y / 120.)
+                # Remove the slider-handle shift correction, b/c none of the
+                # other widgets know about it. If we have the mouse directly
+                # over a tick during a zoom, it should appear as if we are
+                # doing zoom relative to the ticks which live in axis
+                # pixel-space, not slider pixel-space.
+                self.sigZoom.emit(z, ev.x() -
+                    self.proxy.slider.handleWidth()/2)
             self.update()
         ev.accept()
 
@@ -364,9 +371,9 @@ class ScanSlider(QtWidgets.QSlider):
         # Qt will snap sliders to 0 or maximum() if given a desired pixel
         # location outside the mapped range. So we manually just don't draw
         # the handles if they are at 0 or max.
-        if self.startVal > 0 and self.startVal < 1023:
+        if self.startVal > 0 and self.startVal < self.maximum():
             self.drawHandle(startPainter, ScanSlider.startSlider)
-        if self.stopVal > 0 and self.stopVal < 1023:
+        if self.stopVal > 0 and self.stopVal < self.maximum():
             self.drawHandle(stopPainter, ScanSlider.stopSlider)
 
 
@@ -375,6 +382,7 @@ class ScanSlider(QtWidgets.QSlider):
 class ScanProxy(QtCore.QObject):
     sigStartMoved = QtCore.pyqtSignal(float)
     sigStopMoved = QtCore.pyqtSignal(float)
+    sigNumPoints = QtCore.pyqtSignal(int)
 
     def __init__(self, slider, axis, rangeFactor):
         QtCore.QObject.__init__(self)
@@ -452,7 +460,10 @@ class ScanProxy(QtCore.QObject):
     def handleStartMoved(self, rangeVal):
         self.sigStartMoved.emit(self.rangeToReal(rangeVal))
 
-    def handleNumPoints(self, val):
+    def handleNumPoints(self, inc):
+        self.sigNumPoints.emit(self.numPoints + inc)
+
+    def setNumPoints(self, val):
         self.numPoints = val
         self.axis.update()
 
@@ -569,7 +580,9 @@ class ScanWidget(QtWidgets.QWidget):
         slider.sigStartMoved.connect(self.proxy.handleStartMoved)
         self.proxy.sigStopMoved.connect(self.sigStopMoved)
         self.proxy.sigStartMoved.connect(self.sigStartMoved)
+        self.proxy.sigNumPoints.connect(self.sigNumChanged)
         axis.sigZoom.connect(self.proxy.handleZoom)
+        axis.sigPoints.connect(self.proxy.handleNumPoints)
         fitViewButton.clicked.connect(self.fitToView)
         zoomFitButton.clicked.connect(self.zoomToFit)
 
@@ -586,7 +599,7 @@ class ScanWidget(QtWidgets.QWidget):
         self.proxy.moveStart(val)
 
     def setNumPoints(self, val):
-        self.proxy.handleNumPoints(val)
+        self.proxy.setNumPoints(val)
 
     def zoomToFit(self):
         self.proxy.zoomToFit()
