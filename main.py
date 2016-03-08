@@ -4,7 +4,7 @@ import atexit
 from quamash import QApplication, QEventLoop, QtCore, QtWidgets
 
 import scanwidget
-from scientificspinbox import ScientificSpinBox
+from scientific_spinbox import ScientificSpinBox
 
 
 class MainWindow(QtWidgets.QMainWindow):
