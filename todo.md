@@ -18,7 +18,6 @@
         * sidenote: the behavior that could be expected from a single handle, where wheel moves "the" handle does not work here. it might be better to do nothing than something that is unexpected
     * wheel on handle: nothing (as above)
 * Convert FitToView and ZoomToFit to context menu, add Reset.
-* Axis widget should capture scroll events from sliders.
 * To be discussed: drag and shift-drag on the groove
 
 ## Improvements

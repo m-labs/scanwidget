@@ -8,6 +8,7 @@ class ScanAxis(QtWidgets.QWidget):
     def __init__(self, zoomFactor):
         QtWidgets.QWidget.__init__(self)
         self.proxy = None
+        self.slider = None # Needed for eventFilter
         self.sizePolicy().setControlType(QtWidgets.QSizePolicy.ButtonBox)
         self.ticker = Ticker()
         self.zoomFactor = zoomFactor
@@ -57,6 +58,13 @@ class ScanAxis(QtWidgets.QWidget):
             self.update()
         ev.accept()
 
+    def eventFilter(self, obj, ev):
+        if obj != self.slider:
+            return False
+        if ev.type() != QtCore.QEvent.Wheel:
+            return False
+        self.wheelEvent(ev)
+        return True
 
 # Basic ideas from https://gist.github.com/Riateche/27e36977f7d5ea72cf4f
 class ScanSlider(QtWidgets.QSlider):
@@ -386,7 +394,6 @@ class ScanProxy(QtCore.QObject):
         self.realToPixelTransform = self.calculateNewRealToPixel(
             -self.axis.width()/2, 1.0)
         self.invalidOldSizeExpected = True
-        self.axis.installEventFilter(self)
 
     # What real value should map to the axis/slider left? This doesn't depend
     # on any public members so we can make decisions about centering during
@@ -544,6 +551,7 @@ class ScanWidget(QtWidgets.QWidget):
         fitViewButton = QtWidgets.QPushButton("Snap Range")
         self.proxy = ScanProxy(slider, axis, rangeFactor)
         axis.proxy = self.proxy
+        axis.slider = slider
         slider.setMaximum(1023)
 
         # Layout.
@@ -566,6 +574,8 @@ class ScanWidget(QtWidgets.QWidget):
         zoomFitButton.clicked.connect(self.zoomToFit)
 
         # Connect event observers.
+        axis.installEventFilter(self.proxy)
+        slider.installEventFilter(axis)
 
     # Spinbox and button slots. Any time the spinboxes change, ScanWidget
     # mirrors it and passes the information to the proxy.
