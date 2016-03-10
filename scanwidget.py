@@ -318,7 +318,7 @@ class ScanProxy(QtCore.QObject):
     sigStopMoved = QtCore.pyqtSignal(float)
     sigNumPoints = QtCore.pyqtSignal(int)
 
-    def __init__(self, slider, axis, rangeFactor):
+    def __init__(self, slider, axis, rangeFactor, dynamicRange):
         QtCore.QObject.__init__(self)
         self.axis = axis
         self.slider = slider
@@ -326,6 +326,7 @@ class ScanProxy(QtCore.QObject):
         self.realStop = 0
         self.numPoints = 10
         self.rangeFactor = rangeFactor
+        self.dynamicRange = dynamicRange
 
         # Transform that maps the spinboxes to a pixel position on the
         # axis. 0 to axis.width() exclusive indicate positions which will be
@@ -401,6 +402,8 @@ class ScanProxy(QtCore.QObject):
     def handleZoom(self, zoomFactor, mouseXPos):
         newScale = self.realToPixelTransform.m11() * zoomFactor
         refReal = self.pixelToReal(mouseXPos)
+        if abs(refReal)/newScale < 1/self.dynamicRange:
+            return
         newLeft = refReal - mouseXPos/newScale
         self.realToPixelTransform = self.calculateNewRealToPixel(
             newLeft, newScale)
@@ -486,13 +489,13 @@ class ScanWidget(QtWidgets.QWidget):
     sigStopMoved = QtCore.pyqtSignal(float)
     sigNumChanged = QtCore.pyqtSignal(int)
 
-    def __init__(self, zoomFactor=1.05, rangeFactor=6):
+    def __init__(self, zoomFactor=1.05, rangeFactor=6, dynamicRange=1e6):
         QtWidgets.QWidget.__init__(self)
         self.slider = slider = ScanSlider()
         self.axis = axis = ScanAxis(zoomFactor)
         zoomFitButton = QtWidgets.QPushButton("View Range")
         fitViewButton = QtWidgets.QPushButton("Snap Range")
-        self.proxy = ScanProxy(slider, axis, rangeFactor)
+        self.proxy = ScanProxy(slider, axis, rangeFactor, dynamicRange)
         axis.proxy = self.proxy
         axis.slider = slider
         slider.setMaximum(1023)

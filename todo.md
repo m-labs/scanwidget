@@ -1,6 +1,6 @@
 ## To Fix (Bugs)
 * Check that recalculating the zoom transform in fact has a relative error of 10^-15, not absolute error. If latter, rethink transform.
-* Remove asserts (or catch AssertionFailure) and just refuse to honor zooms at some point.
+* Remove asserts
 
 ## To Modify (Not technically broken, but needs to be changed on request)
 
