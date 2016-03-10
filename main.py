@@ -41,7 +41,6 @@ def main():
                  QtWidgets.QSpinBox(),
                  ScientificSpinBox()]
     spinboxes[0].setStyleSheet("QDoubleSpinBox {color:blue}")
-    spinboxes[1].setStyleSheet("QSpinBox {color:green}")
     spinboxes[2].setStyleSheet("QDoubleSpinBox {color:red}")
     spinboxes[0].setMinimumSize(110, 0)
     spinboxes[2].setMinimumSize(110, 0)

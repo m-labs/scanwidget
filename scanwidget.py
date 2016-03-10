@@ -25,16 +25,18 @@ class ScanAxis(QtWidgets.QWidget):
         painter.drawLine(0, 0, self.width(), 0)
         realLeft = self.proxy.pixelToReal(0)
         realRight = self.proxy.pixelToReal(self.width())
+        painter.save()
+        pen = QtGui.QPen()
+        pen.setWidth(2)
+        painter.setPen(pen)
 
         ticks, prefix, labels = self.ticker(realLeft, realRight)
         for t, l in zip(ticks, labels):
             t = self.proxy.realToPixel(t)
             textCenter = (len(l)/2.0)*avgCharWidth
-            painter.drawLine(t, 5, t, -5)
+            painter.drawLine(t, 0, t, -5)
             painter.drawText(t - textCenter, -10, l)
 
-        painter.save()
-        painter.setPen(QtGui.QColor(QtCore.Qt.green))
         sliderStartPixel = self.proxy.realToPixel(self.proxy.realStart)
         sliderStopPixel = self.proxy.realToPixel(self.proxy.realStop)
         pixels = linspace(sliderStartPixel, sliderStopPixel,
