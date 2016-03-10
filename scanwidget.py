@@ -10,7 +10,7 @@ class ScanAxis(QtWidgets.QWidget):
     def __init__(self, zoomFactor):
         QtWidgets.QWidget.__init__(self)
         self.proxy = None
-        self.slider = None # Needed for eventFilter
+        self.slider = None  # Needed for eventFilter
         self.sizePolicy().setControlType(QtWidgets.QSizePolicy.ButtonBox)
         self.ticker = Ticker()
         self.zoomFactor = zoomFactor
@@ -39,7 +39,7 @@ class ScanAxis(QtWidgets.QWidget):
         sliderStartPixel = self.proxy.realToPixel(self.proxy.realStart)
         sliderStopPixel = self.proxy.realToPixel(self.proxy.realStop)
         pixels = linspace(sliderStartPixel, sliderStopPixel,
-            self.proxy.numPoints)
+                          self.proxy.numPoints)
         for p in pixels:
             p_int = int(p)
             painter.drawLine(p_int, 0, p_int, 5)
@@ -63,7 +63,7 @@ class ScanAxis(QtWidgets.QWidget):
                 # doing zoom relative to the ticks which live in axis
                 # pixel-space, not slider pixel-space.
                 self.sigZoom.emit(z, ev.x() -
-                    self.proxy.slider.handleWidth()/2)
+                                  self.proxy.slider.handleWidth()/2)
             self.update()
         ev.accept()
 
@@ -74,6 +74,7 @@ class ScanAxis(QtWidgets.QWidget):
             return False
         self.wheelEvent(ev)
         return True
+
 
 # Basic ideas from https://gist.github.com/Riateche/27e36977f7d5ea72cf4f
 class ScanSlider(QtWidgets.QSlider):
