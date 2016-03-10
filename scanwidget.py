@@ -195,25 +195,11 @@ class ScanSlider(QtWidgets.QSlider):
     #     if action == QtWidgets.QAbstractSlider.SliderSingleStepAdd:
     #         if
 
-    def setStartValue(self, val):
-        self.setSpan(val, self.stopVal)
-
-    def setStopValue(self, val):
-        self.setSpan(self.startVal, val)
-
-    def setSpan(self, lower, upper):
-        # TODO: Is bound() necessary? QStyle::sliderPositionFromValue appears
+    def setSpan(self, low, high):
+        # TODO: Is this necessary? QStyle::sliderPositionFromValue appears
         # to clamp already.
-        def bound(min, curr, max):
-            if curr < min:
-                return min
-            elif curr > max:
-                return max
-            else:
-                return curr
-
-        low = bound(self.minimum(), lower, self.maximum())
-        high = bound(self.minimum(), upper, self.maximum())
+        low = min(max(self.minimum(), low), self.maximum())
+        high = min(max(self.minimum(), high), self.maximum())
 
         if low != self.startVal or high != self.stopVal:
             if low != self.startVal:
@@ -232,7 +218,7 @@ class ScanSlider(QtWidgets.QSlider):
             if self.isSliderDown():
                 self.sigStartMoved.emit(self.startPos)
             if self.hasTracking() and not self.blockTracking:
-                self.setStartValue(val)
+                self.setSpan(self.startPos, self.stopVal)
 
     def setStopPosition(self, val):
         if val != self.stopPos:
@@ -242,7 +228,7 @@ class ScanSlider(QtWidgets.QSlider):
             if self.isSliderDown():
                 self.sigStopMoved.emit(self.stopPos)
             if self.hasTracking() and not self.blockTracking:
-                self.setStopValue(val)
+                self.setSpan(self.startVal, self.stopPos)
 
     def mousePressEvent(self, ev):
         if self.minimum() == self.maximum() or (ev.buttons() ^ ev.button()):
