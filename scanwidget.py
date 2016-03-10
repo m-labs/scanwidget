@@ -79,9 +79,6 @@ class ScanAxis(QtWidgets.QWidget):
 class ScanSlider(QtWidgets.QSlider):
     sigStartMoved = QtCore.pyqtSignal(int)
     sigStopMoved = QtCore.pyqtSignal(int)
-    noSlider, startSlider, stopSlider = range(3)
-    stopStyle = "QSlider::handle {background:red}"
-    startStyle = "QSlider::handle {background:blue}"
 
     def __init__(self):
         QtWidgets.QSlider.__init__(self, QtCore.Qt.Horizontal)
@@ -92,8 +89,6 @@ class ScanSlider(QtWidgets.QSlider):
         self.stopVal = 99  # upper
         self.offset = 0
         self.position = 0
-        self.lastPressed = ScanSlider.noSlider
-        self.selectedHandle = ScanSlider.startSlider
         self.upperPressed = QtWidgets.QStyle.SC_None
         self.lowerPressed = QtWidgets.QStyle.SC_None
         self.firstMovement = False  # State var for handling slider overlap.
@@ -103,22 +98,22 @@ class ScanSlider(QtWidgets.QSlider):
         # set the stylesheets for drawing each slider later. See paintEvent.
         self.dummyStartSlider = QtWidgets.QSlider()
         self.dummyStopSlider = QtWidgets.QSlider()
-        self.dummyStartSlider.setStyleSheet(ScanSlider.startStyle)
-        self.dummyStopSlider.setStyleSheet(ScanSlider.stopStyle)
+        self.dummyStartSlider.setStyleSheet(
+            "QSlider::handle {background:blue}")
+        self.dummyStopSlider.setStyleSheet(
+            "QSlider::handle {background:red}")
 
     # We basically superimpose two QSliders on top of each other, discarding
     # the state that remains constant between the two when drawing.
     # Everything except the handles remain constant.
     def initHandleStyleOption(self, opt, handle):
         self.initStyleOption(opt)
-        if handle == ScanSlider.startSlider:
+        if handle == "start":
             opt.sliderPosition = self.startPos
             opt.sliderValue = self.startVal
-        elif handle == ScanSlider.stopSlider:
+        elif handle == "stop":
             opt.sliderPosition = self.stopPos
             opt.sliderValue = self.stopVal
-        else:
-            pass  # AssertionErrors
 
     # We get the range of each slider separately.
     def pixelPosToRangeValue(self, pos):
@@ -198,10 +193,10 @@ class ScanSlider(QtWidgets.QSlider):
     def handleMousePress(self, pos, control, val, handle):
         opt = QtWidgets.QStyleOptionSlider()
         self.initHandleStyleOption(opt, handle)
-        startAtEdges = (handle == ScanSlider.startSlider and
+        startAtEdges = (handle == "start" and
                         (self.startVal == self.minimum() or
                          self.startVal == self.maximum()))
-        stopAtEdges = (handle == ScanSlider.stopSlider and
+        stopAtEdges = (handle == "stop" and
                        (self.stopVal == self.minimum() or
                         self.stopVal == self.maximum()))
 
@@ -218,9 +213,7 @@ class ScanSlider(QtWidgets.QSlider):
         if control == QtWidgets.QStyle.SC_SliderHandle:
             # no pick()- slider orientation static
             self.offset = pos.x() - sr.topLeft().x()
-            self.lastPressed = handle
             self.setSliderDown(True)
-            self.selectedHandle = handle
             # emit
 
         # Needed?
@@ -295,11 +288,10 @@ class ScanSlider(QtWidgets.QSlider):
 
         # Prefer stopVal in the default case.
         self.upperPressed = self.handleMousePress(
-            ev.pos(), self.upperPressed, self.stopVal, ScanSlider.stopSlider)
+            ev.pos(), self.upperPressed, self.stopVal, "stop")
         if self.upperPressed != QtWidgets.QStyle.SC_SliderHandle:
             self.lowerPressed = self.handleMousePress(
-                ev.pos(), self.upperPressed, self.startVal,
-                ScanSlider.startSlider)
+                ev.pos(), self.upperPressed, self.startVal, "start")
 
         # State that is needed to handle the case where two sliders are equal.
         self.firstMovement = True
@@ -374,9 +366,9 @@ class ScanSlider(QtWidgets.QSlider):
         # location outside the mapped range. So we manually just don't draw
         # the handles if they are at 0 or max.
         if self.startVal > 0 and self.startVal < self.maximum():
-            self.drawHandle(startPainter, ScanSlider.startSlider)
+            self.drawHandle(startPainter, "start")
         if self.stopVal > 0 and self.stopVal < self.maximum():
-            self.drawHandle(stopPainter, ScanSlider.stopSlider)
+            self.drawHandle(stopPainter, "stop")
 
 
 # real (Sliders) => pixel (one pixel movement of sliders would increment by X)
