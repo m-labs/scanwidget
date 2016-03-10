@@ -149,12 +149,7 @@ class ScanSlider(QtWidgets.QSlider):
         gr = self.style().subControlRect(QtWidgets.QStyle.CC_Slider, opt,
                                          QtWidgets.QStyle.SC_SliderGroove,
                                          self)
-        sliderLength = self.handleWidth()
-        sliderStart = gr.x()
-        # For historical reasons right() returns left()+width() - 1
-        # x() is equivalent to left().
-        sliderStop = gr.right() - sliderLength + 1
-        return sliderStop - sliderStart
+        return gr.width() - self.handleWidth()
 
     # If groove and axis are not aligned (and they should be), we can use
     # this function to calculate the offset between them.
