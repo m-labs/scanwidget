@@ -25,17 +25,17 @@ class ScanAxis(QtWidgets.QWidget):
         painter.drawLine(0, 0, self.width(), 0)
         realLeft = self.proxy.pixelToReal(0)
         realRight = self.proxy.pixelToReal(self.width())
-        painter.save()
+        ticks, prefix, labels = self.ticker(realLeft, realRight)
+        painter.drawText(0, -25, prefix)
+
         pen = QtGui.QPen()
         pen.setWidth(2)
         painter.setPen(pen)
 
-        ticks, prefix, labels = self.ticker(realLeft, realRight)
         for t, l in zip(ticks, labels):
             t = self.proxy.realToPixel(t)
-            textCenter = (len(l)/2.0)*avgCharWidth
             painter.drawLine(t, 0, t, -5)
-            painter.drawText(t - textCenter, -10, l)
+            painter.drawText(t - len(l)/2*avgCharWidth, -10, l)
 
         sliderStartPixel = self.proxy.realToPixel(self.proxy.realStart)
         sliderStopPixel = self.proxy.realToPixel(self.proxy.realStop)
@@ -44,9 +44,6 @@ class ScanAxis(QtWidgets.QWidget):
         for p in pixels:
             p_int = int(p)
             painter.drawLine(p_int, 0, p_int, 5)
-
-        painter.restore()
-        painter.drawText(0, -25, prefix)
         ev.accept()
 
     def wheelEvent(self, ev):
@@ -63,8 +60,8 @@ class ScanAxis(QtWidgets.QWidget):
                 # over a tick during a zoom, it should appear as if we are
                 # doing zoom relative to the ticks which live in axis
                 # pixel-space, not slider pixel-space.
-                self.sigZoom.emit(z, ev.x() -
-                                  self.proxy.slider.handleWidth()/2)
+                self.sigZoom.emit(
+                    z, ev.x() - self.proxy.slider.handleWidth()/2)
             self.update()
         ev.accept()
 
