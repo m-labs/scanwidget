@@ -305,7 +305,6 @@ class ScanSlider(QtWidgets.QSlider):
 
     def paintEvent(self, ev):
         # Use QStylePainters to make redrawing as painless as possible.
-        painter = QtWidgets.QStylePainter(self)
         # Paint on the custom widget, using the attributes of the fake
         # slider references we keep around. setStyleSheet within paintEvent
         # leads to heavy performance penalties (and recursion?).
@@ -315,14 +314,6 @@ class ScanSlider(QtWidgets.QSlider):
         # regardless of platform.
         startPainter = QtWidgets.QStylePainter(self, self.dummyStartSlider)
         stopPainter = QtWidgets.QStylePainter(self, self.dummyStopSlider)
-
-        # Groove
-        opt = QtWidgets.QStyleOptionSlider()
-        self.initStyleOption(opt)
-        opt.sliderValue = 0
-        opt.sliderPosition = 0
-        opt.subControls = QtWidgets.QStyle.SC_SliderGroove
-        painter.drawComplexControl(QtWidgets.QStyle.CC_Slider, opt)
 
         # Handles
         # Qt will snap sliders to 0 or maximum() if given a desired pixel
