@@ -10,7 +10,6 @@ class ScanAxis(QtWidgets.QWidget):
     def __init__(self, zoomFactor):
         QtWidgets.QWidget.__init__(self)
         self.proxy = None
-        self.slider = None  # Needed for eventFilter
         self.sizePolicy().setControlType(QtWidgets.QSizePolicy.ButtonBox)
         self.ticker = Ticker()
         self.zoomFactor = zoomFactor
@@ -68,7 +67,7 @@ class ScanAxis(QtWidgets.QWidget):
         ev.accept()
 
     def eventFilter(self, obj, ev):
-        if obj != self.slider:
+        if obj is not self.proxy.slider:
             return False
         if ev.type() != QtCore.QEvent.Wheel:
             return False
