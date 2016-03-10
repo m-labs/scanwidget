@@ -119,42 +119,16 @@ class ScanSlider(QtWidgets.QSlider):
     def pixelPosToRangeValue(self, pos):
         opt = QtWidgets.QStyleOptionSlider()
         self.initStyleOption(opt)
-
-        gr = self.style().subControlRect(QtWidgets.QStyle.CC_Slider, opt,
-                                         QtWidgets.QStyle.SC_SliderGroove,
-                                         self)
-        sr = self.style().subControlRect(QtWidgets.QStyle.CC_Slider, opt,
-                                         QtWidgets.QStyle.SC_SliderHandle,
-                                         self)
-
-        sliderLength = sr.width()
-        sliderStart = gr.x()
-        # For historical reasons right() returns left()+width() - 1
-        # x() is equivalent to left().
-        sliderStop = gr.right() - sliderLength + 1
-
         rangeVal = QtWidgets.QStyle.sliderValueFromPosition(
-            self.minimum(), self.maximum(), pos - sliderStart,
-            sliderStop - sliderStart, opt.upsideDown)
+            self.minimum(), self.maximum(), pos - self.grooveX(),
+            self.effectiveWidth(), opt.upsideDown)
         return rangeVal
 
     def rangeValueToPixelPos(self, val):
         opt = QtWidgets.QStyleOptionSlider()
         self.initStyleOption(opt)
-
-        gr = self.style().subControlRect(QtWidgets.QStyle.CC_Slider, opt,
-                                         QtWidgets.QStyle.SC_SliderGroove,
-                                         self)
-        sr = self.style().subControlRect(QtWidgets.QStyle.CC_Slider, opt,
-                                         QtWidgets.QStyle.SC_SliderHandle,
-                                         self)
-
-        sliderLength = sr.width()
-        sliderStart = gr.x()
-        sliderStop = gr.right() - sliderLength + 1
-
         pixel = QtWidgets.QStyle.sliderPositionFromValue(
-            self.minimum(), self.maximum(), val, sliderStop - sliderStart,
+            self.minimum(), self.maximum(), val, self.effectiveWidth(),
             opt.upsideDown)
         return pixel
 
@@ -177,6 +151,8 @@ class ScanSlider(QtWidgets.QSlider):
                                          self)
         sliderLength = self.handleWidth()
         sliderStart = gr.x()
+        # For historical reasons right() returns left()+width() - 1
+        # x() is equivalent to left().
         sliderStop = gr.right() - sliderLength + 1
         return sliderStop - sliderStart
 
