@@ -119,8 +119,11 @@ class ScanSlider(QtWidgets.QSlider):
     def pixelPosToRangeValue(self, pos):
         opt = QtWidgets.QStyleOptionSlider()
         self.initStyleOption(opt)
+        gr = self.style().subControlRect(QtWidgets.QStyle.CC_Slider, opt,
+                                         QtWidgets.QStyle.SC_SliderGroove,
+                                         self)
         rangeVal = QtWidgets.QStyle.sliderValueFromPosition(
-            self.minimum(), self.maximum(), pos - self.grooveX(),
+            self.minimum(), self.maximum(), pos - gr.x(),
             self.effectiveWidth(), opt.upsideDown)
         return rangeVal
 
@@ -150,16 +153,6 @@ class ScanSlider(QtWidgets.QSlider):
                                          QtWidgets.QStyle.SC_SliderGroove,
                                          self)
         return gr.width() - self.handleWidth()
-
-    # If groove and axis are not aligned (and they should be), we can use
-    # this function to calculate the offset between them.
-    def grooveX(self):
-        opt = QtWidgets.QStyleOptionSlider()
-        self.initStyleOption(opt)
-        gr = self.style().subControlRect(QtWidgets.QStyle.CC_Slider, opt,
-                                         QtWidgets.QStyle.SC_SliderGroove,
-                                         self)
-        return gr.x()
 
     def handleMousePress(self, pos, control, val, handle):
         opt = QtWidgets.QStyleOptionSlider()
@@ -397,9 +390,6 @@ class ScanProxy(QtCore.QObject):
         return realPoint.x()
 
     def rangeToReal(self, val):
-        # gx = self.slider.grooveX()
-        # ax = self.axis.x()
-        # assert gx == ax, "gx: {}, ax: {}".format(gx, ax)
         pixelVal = self.slider.rangeValueToPixelPos(val)
         return self.pixelToReal(pixelVal)
 
