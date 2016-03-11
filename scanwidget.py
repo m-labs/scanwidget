@@ -1,6 +1,7 @@
 from PyQt5 import QtGui, QtCore, QtWidgets
-from ticker import Ticker
 from numpy import linspace
+
+from ticker import Ticker
 
 
 class ScanAxis(QtWidgets.QWidget):
