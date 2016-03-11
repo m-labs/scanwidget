@@ -495,10 +495,10 @@ class ScanWidget(QtWidgets.QWidget):
         slider.setMaximum(1023)
 
         # Layout.
-        layout = QtWidgets.QGridLayout()
-        layout.setVerticalSpacing(0)
-        layout.addWidget(axis, 0, 0, 1, -1)
-        layout.addWidget(slider, 1, 0, 1, -1)
+        layout = QtWidgets.QVBoxLayout()
+        layout.setSpacing(0)
+        layout.addWidget(axis)
+        layout.addWidget(slider)
         self.setLayout(layout)
 
         # Connect signals (minus context menu)
