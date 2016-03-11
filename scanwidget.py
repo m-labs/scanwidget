@@ -75,14 +75,6 @@ class ScanAxis(QtWidgets.QWidget):
             self.update()
         ev.accept()
 
-    def eventFilter(self, obj, ev):
-        if obj is not self.proxy.slider:
-            return False
-        if ev.type() != QtCore.QEvent.Wheel:
-            return False
-        self.wheelEvent(ev)
-        return True
-
 
 # Basic ideas from https://gist.github.com/Riateche/27e36977f7d5ea72cf4f
 class ScanSlider(QtWidgets.QSlider):
@@ -457,9 +449,10 @@ class ScanProxy(QtCore.QObject):
             self.sigStartMoved.emit(newStart)
 
     def eventFilter(self, obj, ev):
-        if obj != self.axis:
-            return False
-        if ev.type() != QtCore.QEvent.Resize:
+        if obj is self.slider and ev.type() == QtCore.QEvent.Wheel:
+            self.axis.wheelEvent(ev)
+            return True
+        if not (obj is self.axis and ev.type() == QtCore.QEvent.Resize):
             return False
         if ev.oldSize().isValid():
             oldLeft = self.pixelToReal(0)
@@ -525,7 +518,7 @@ class ScanWidget(QtWidgets.QWidget):
 
         # Connect event observers.
         axis.installEventFilter(self.proxy)
-        slider.installEventFilter(axis)
+        slider.installEventFilter(self.proxy)
 
         # Context menu entries
         self.viewRangeAct = QtWidgets.QAction("&View Range", self)
