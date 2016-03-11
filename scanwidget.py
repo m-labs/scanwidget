@@ -280,9 +280,9 @@ class ScanSlider(QtWidgets.QSlider):
         # Qt will snap sliders to 0 or maximum() if given a desired pixel
         # location outside the mapped range. So we manually just don't draw
         # the handles if they are at 0 or max.
-        if self.startVal > 0 and self.startVal < self.maximum():
+        if 0 < self.startVal < self.maximum():
             self.drawHandle(startPainter, "start")
-        if self.stopVal > 0 and self.stopVal < self.maximum():
+        if 0 < self.stopVal < self.maximum():
             self.drawHandle(stopPainter, "stop")
 
 
