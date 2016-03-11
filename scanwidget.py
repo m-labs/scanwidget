@@ -398,7 +398,7 @@ class ScanProxy(QtCore.QObject):
     def zoomToFit(self):
         newScale = self.slider.effectiveWidth()/abs(
             self.realStop - self.realStart)
-        newScale /= 1 + 2*self.zoomMargin
+        newScale *= 1 - 2*self.zoomMargin
         newCenter = (self.realStop + self.realStart)/2
         if newCenter:
             newScale = min(newScale, self.dynamicRange/abs(newCenter))
