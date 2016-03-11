@@ -24,7 +24,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 def main():
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     app = QApplication([])
     loop = QEventLoop(app)
     asyncio.set_event_loop(loop)

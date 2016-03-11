@@ -409,7 +409,6 @@ class ScanProxy(QtCore.QObject):
             newScale = min(newScale, self.dynamicRange/abs(newCenter))
         newLeft = newCenter - self.slider.effectiveWidth()/2/newScale
         self.realToPixelTransform = newLeft, newScale
-        logger.debug("transform %s", self.realToPixelTransform)
         self.moveStop(self.realStop)
         self.moveStart(self.realStart)
         self.axis.update()  # Axis normally takes care to update itself during
@@ -552,5 +551,4 @@ class ScanWidget(QtWidgets.QWidget):
         menu = QtWidgets.QMenu(self)
         menu.addAction(self.viewRangeAct)
         menu.addAction(self.snapRangeAct)
-        logger.debug("globalPos %s", ev.globalPos())
         menu.exec(ev.globalPos())
