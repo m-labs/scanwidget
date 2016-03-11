@@ -44,9 +44,9 @@ def main():
     spinboxes[2].setStyleSheet("QDoubleSpinBox {color:red}")
     spinboxes[0].setMinimumSize(110, 0)
     spinboxes[2].setMinimumSize(110, 0)
-    for s in spinboxes[1:2]:
-        s.setMinimum(1)
-        s.setValue(10)
+    spinboxes[1].setMinimum(1)
+    spinboxes[1].setMaximum(float("Inf"))
+
     labels = [QtWidgets.QLabel(l) for l in "Start Stop Points".split()]
     labels[0].setStyleSheet("QLabel {color:blue}")
     labels[1].setStyleSheet("QLabel {color:red}")
@@ -62,6 +62,10 @@ def main():
     spinboxes[0].valueChanged.connect(scanner.setStart)
     spinboxes[1].valueChanged.connect(scanner.setNumPoints)
     spinboxes[2].valueChanged.connect(scanner.setStop)
+
+    spinboxes[0].setValue(-100)
+    spinboxes[2].setValue(200)
+    spinboxes[1].setValue(11)
 
     win.setCentralWidget(container)
     win.show()
