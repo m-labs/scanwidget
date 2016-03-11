@@ -1,7 +1,12 @@
+import logging
+
 from PyQt5 import QtGui, QtCore, QtWidgets
 from numpy import linspace
 
 from ticker import Ticker
+
+
+logger = logging.getLogger(__name__)
 
 
 class ScanAxis(QtWidgets.QWidget):
@@ -404,7 +409,7 @@ class ScanProxy(QtCore.QObject):
             newScale = min(newScale, self.dynamicRange/abs(newCenter))
         newLeft = newCenter - self.slider.effectiveWidth()/2/newScale
         self.realToPixelTransform = newLeft, newScale
-        self.printTransform()
+        logger.debug("transform %s", self.realToPixelTransform)
         self.moveStop(self.realStop)
         self.moveStart(self.realStart)
         self.axis.update()  # Axis normally takes care to update itself during
@@ -484,8 +489,6 @@ class ScanProxy(QtCore.QObject):
         # same positions in the new axis-space.
         return False
 
-    def printTransform(self):
-        print(self.realToPixelTransform)
 
 
 class ScanWidget(QtWidgets.QWidget):
@@ -549,5 +552,5 @@ class ScanWidget(QtWidgets.QWidget):
         menu = QtWidgets.QMenu(self)
         menu.addAction(self.viewRangeAct)
         menu.addAction(self.snapRangeAct)
-        print(ev.globalPos())
+        logger.debug("globalPos %s", ev.globalPos())
         menu.exec(ev.globalPos())

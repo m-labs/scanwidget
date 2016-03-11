@@ -1,5 +1,6 @@
 import asyncio
 import atexit
+import logging
 
 from quamash import QApplication, QEventLoop, QtCore, QtWidgets
 
@@ -23,6 +24,7 @@ class MainWindow(QtWidgets.QMainWindow):
 
 
 def main():
+    logging.basicConfig(level=logging.DEBUG)
     app = QApplication([])
     loop = QEventLoop(app)
     asyncio.set_event_loop(loop)
