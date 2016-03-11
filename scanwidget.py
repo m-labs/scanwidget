@@ -500,8 +500,6 @@ class ScanWidget(QtWidgets.QWidget):
         QtWidgets.QWidget.__init__(self)
         self.slider = slider = ScanSlider()
         self.axis = axis = ScanAxis(zoomFactor)
-        zoomFitButton = QtWidgets.QPushButton("View Range")
-        fitViewButton = QtWidgets.QPushButton("Snap Range")
         self.proxy = ScanProxy(slider, axis, rangeFactor, dynamicRange)
         axis.proxy = self.proxy
         axis.slider = slider
@@ -513,11 +511,9 @@ class ScanWidget(QtWidgets.QWidget):
         layout.setRowMinimumHeight(0, 40)
         layout.addWidget(axis, 0, 0, 1, -1)
         layout.addWidget(slider, 1, 0, 1, -1)
-        layout.addWidget(zoomFitButton, 2, 0)
-        layout.addWidget(fitViewButton, 2, 1)
         self.setLayout(layout)
 
-        # Connect signals
+        # Connect signals (minus context menu)
         slider.sigStopMoved.connect(self.proxy.handleStopMoved)
         slider.sigStartMoved.connect(self.proxy.handleStartMoved)
         self.proxy.sigStopMoved.connect(self.sigStopMoved)
@@ -525,12 +521,16 @@ class ScanWidget(QtWidgets.QWidget):
         self.proxy.sigNumPoints.connect(self.sigNumChanged)
         axis.sigZoom.connect(self.proxy.handleZoom)
         axis.sigPoints.connect(self.proxy.handleNumPoints)
-        fitViewButton.clicked.connect(self.fitToView)
-        zoomFitButton.clicked.connect(self.zoomToFit)
 
         # Connect event observers.
         axis.installEventFilter(self.proxy)
         slider.installEventFilter(axis)
+
+        # Context menu entries
+        self.zoomToFitAct = QtWidgets.QAction("&View Range", self)
+        self.fitToViewAct = QtWidgets.QAction("&Snap Range", self)
+        self.zoomToFitAct.triggered.connect(self.zoomToFit)
+        self.fitToViewAct.triggered.connect(self.fitToView)
 
     # Spinbox and button slots. Any time the spinboxes change, ScanWidget
     # mirrors it and passes the information to the proxy.
@@ -549,5 +549,9 @@ class ScanWidget(QtWidgets.QWidget):
     def fitToView(self):
         self.proxy.fitToView()
 
-    def reset(self):
-        self.proxy.reset()
+    def contextMenuEvent(self, ev):
+        menu = QtWidgets.QMenu(self)
+        menu.addAction(self.zoomToFitAct)
+        menu.addAction(self.fitToViewAct)
+        print(ev.globalPos())
+        menu.exec(ev.globalPos())
