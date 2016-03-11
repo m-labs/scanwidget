@@ -400,8 +400,8 @@ class ScanProxy(QtCore.QObject):
             refSlider = self.realStop
         else:
             refSlider = self.realStart
-        if self.rangeFactor <= 2:
-            return  # Ill-formed snap range- do nothing.
+        if self.rangeFactor <= 2 or currRangeReal == 0:
+            return  # Ill-formed snap range- do nothing
         proportion = self.rangeFactor/(self.rangeFactor - 2)
         newScale = self.slider.effectiveWidth()/(proportion*currRangeReal)
         newLeft = (self.slider.effectiveWidth()/(self.rangeFactor*newScale) -
@@ -413,6 +413,28 @@ class ScanProxy(QtCore.QObject):
         self.axis.update()  # Axis normally takes care to update itself during
         # zoom. In this code path however, the zoom didn't arrive via the axis
         # widget, so we need to notify manually.
+
+    # This function is called if the axis width, slider width, and slider
+    # positions are in an inconsistent state, to initialize the widget.
+    # This function handles handles the slider positions. Slider and axis
+    # handle its own width changes; proxy watches for axis width resizeEvent to
+    # alter mapping from real to pixel space.
+    def zoomToFitInit(self):
+        currRangeReal = abs(self.realStop - self.realStart)
+        if self.rangeFactor <= 2 or currRangeReal == 0:
+            self.moveStop(self.realStop)
+            self.moveStart(self.realStart)
+            # Ill-formed snap range- move the sliders anyway,
+            # because we arrived here during widget
+            # initialization, where the slider positions are likely invalid.
+            # This will force the sliders to have positions on the axis
+            # which reflect the start/stop values currently set.
+        else:
+            self.zoomToFit()
+        # Notify spinboxes manually, since slider wasn't clicked and will
+        # therefore not emit signals.
+        self.sigStopMoved.emit(self.realStop)
+        self.sigStartMoved.emit(self.realStart)
 
     def fitToView(self):
         lowRange = 1.0/self.rangeFactor
@@ -441,14 +463,22 @@ class ScanProxy(QtCore.QObject):
             newWidth = ev.size().width() - self.slider.handleWidth()
             # assert refRight > oldLeft
             newScale = newWidth/(refRight - oldLeft)
+            self.realToPixelTransform = oldLeft, newScale
         else:
             # TODO: self.axis.width() is invalid during object
             # construction. The width will change when placed in a
             # layout WITHOUT a resizeEvent. Why?
             oldLeft = -ev.size().width()/2
             newScale = 1.0
+            self.realToPixelTransform = oldLeft, newScale
+            # We need to reinitialize the pixel transform b/c the old width
+            # of the axis is no longer valid. When we have a valid transform,
+            # we can then zoomToFit based on the desired real values.
+            # The slider handle values are invalid before this point as well;
+            # we set them to the correct value here, regardless of whether
+            # the slider has already resized itsef or not.
+            self.zoomToFitInit()
             self.invalidOldSizeExpected = False
-        self.realToPixelTransform = oldLeft, newScale
         # assert self.pixelToReal(0) == oldLeft, \
         # "{}, {}".format(self.pixelToReal(0), oldLeft)
         # Slider will update independently, making sure that the old

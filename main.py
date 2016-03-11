@@ -65,7 +65,6 @@ def main():
 
     win.setCentralWidget(container)
     win.show()
-    scanner.fitToView()
     loop.run_until_complete(win.exit_request.wait())
 
 
