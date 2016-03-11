@@ -57,6 +57,10 @@ class ScanAxis(QtWidgets.QWidget):
         if y:
             if ev.modifiers() & QtCore.Qt.ShiftModifier:
                 # If shift+scroll, modify number of points.
+                # TODO: This is not perfect. For high-resolution touchpads you
+                # get many small events with y < 120 which should accumulate.
+                # That would also match the wheel behavior of an integer
+                # spinbox.
                 z = int(y / 120.)
                 self.sigPoints.emit(z)
             else:
@@ -487,7 +491,6 @@ class ScanProxy(QtCore.QObject):
         # confident that the new slider position will still map to the
         # same positions in the new axis-space.
         return False
-
 
 
 class ScanWidget(QtWidgets.QWidget):
