@@ -288,16 +288,33 @@ class ScanSlider(QtWidgets.QSlider):
 
 # real (Sliders) => pixel (one pixel movement of sliders would increment by X)
 # => range (minimum granularity that sliders understand).
-class ScanProxy(QtCore.QObject):
+class ScanWidget(QtWidgets.QWidget):
     sigStartMoved = QtCore.pyqtSignal(float)
     sigStopMoved = QtCore.pyqtSignal(float)
     sigNumChanged = QtCore.pyqtSignal(int)
 
-    def __init__(self, slider, axis, zoomMargin, dynamicRange, zoomFactor):
-        QtCore.QObject.__init__(self)
-        self.axis = axis
+    def __init__(self, zoomFactor=1.05, zoomMargin=.1, dynamicRange=1e9):
+        QtWidgets.QWidget.__init__(self)
+        self.slider = slider = ScanSlider()
+        self.axis = axis = ScanAxis()
         axis.proxy = self
-        self.slider = slider
+
+        # Layout.
+        layout = QtWidgets.QVBoxLayout()
+        layout.setSpacing(0)
+        layout.addWidget(axis)
+        layout.addWidget(slider)
+        self.setLayout(layout)
+
+        # Context menu entries
+        self.menu = QtWidgets.QMenu(self)
+        viewRangeAct = QtWidgets.QAction("&View Range", self)
+        viewRangeAct.triggered.connect(self.viewRange)
+        self.menu.addAction(viewRangeAct)
+        snapRangeAct = QtWidgets.QAction("&Snap Range", self)
+        snapRangeAct.triggered.connect(self.snapRange)
+        self.menu.addAction(snapRangeAct)
+
         self.realStart = -1.
         self.realStop = 1.
         self.numPoints = 11
@@ -319,6 +336,9 @@ class ScanProxy(QtCore.QObject):
         slider.installEventFilter(self)
         slider.sigStopMoved.connect(self.handleStopMoved)
         slider.sigStartMoved.connect(self.handleStartMoved)
+
+    def contextMenuEvent(self, ev):
+        self.menu.popup(ev.globalPos())
 
     # pixel vals for sliders: 0 to slider_width - 1
     def realToPixel(self, val):
@@ -490,55 +510,3 @@ class ScanProxy(QtCore.QObject):
         # confident that the new slider position will still map to the
         # same positions in the new axis-space.
         return False
-
-
-class ScanWidget(QtWidgets.QWidget):
-    sigStartMoved = QtCore.pyqtSignal(float)
-    sigStopMoved = QtCore.pyqtSignal(float)
-    sigNumChanged = QtCore.pyqtSignal(int)
-
-    def __init__(self, zoomFactor=1.05, zoomMargin=.1, dynamicRange=1e9):
-        QtWidgets.QWidget.__init__(self)
-        self.slider = slider = ScanSlider()
-        self.axis = axis = ScanAxis()
-        self.proxy = ScanProxy(slider, axis, zoomMargin, dynamicRange,
-                               zoomFactor)
-
-        # Layout.
-        layout = QtWidgets.QVBoxLayout()
-        layout.setSpacing(0)
-        layout.addWidget(axis)
-        layout.addWidget(slider)
-        self.setLayout(layout)
-
-        # Connect signals (minus context menu)
-        self.proxy.sigStopMoved.connect(self.sigStopMoved)
-        self.proxy.sigStartMoved.connect(self.sigStartMoved)
-        self.proxy.sigNumChanged.connect(self.sigNumChanged)
-
-        # Context menu entries
-        self.menu = QtWidgets.QMenu(self)
-        viewRangeAct = QtWidgets.QAction("&View Range", self)
-        viewRangeAct.triggered.connect(self.viewRange)
-        self.menu.addAction(viewRangeAct)
-        snapRangeAct = QtWidgets.QAction("&Snap Range", self)
-        snapRangeAct.triggered.connect(self.snapRange)
-        self.menu.addAction(snapRangeAct)
-
-    def setStop(self, val):
-        self.proxy.setStop(val)
-
-    def setStart(self, val):
-        self.proxy.setStart(val)
-
-    def setNumPoints(self, val):
-        self.proxy.setNumPoints(val)
-
-    def viewRange(self):
-        self.proxy.viewRange()
-
-    def snapRange(self):
-        self.proxy.snapRange()
-
-    def contextMenuEvent(self, ev):
-        self.menu.popup(ev.globalPos())
