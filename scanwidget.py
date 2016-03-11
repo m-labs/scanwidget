@@ -468,7 +468,7 @@ class ScanProxy(QtCore.QObject):
             # TODO: self.axis.width() is invalid during object
             # construction. The width will change when placed in a
             # layout WITHOUT a resizeEvent. Why?
-            oldLeft = -ev.size().width()/2
+            oldLeft = ev.size().width()/2
             newScale = 1.0
             self.realToPixelTransform = oldLeft, newScale
             # We need to reinitialize the pixel transform b/c the old width
