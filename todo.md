@@ -5,7 +5,6 @@
 ## To Modify (Not technically broken, but needs to be changed on request)
 
 ## To Implement
-* Convert FitToView and ZoomToFit to context menu.
 * Drag modes:
     * drag axis, groove: move axis origin
     * drag a handle: move the handle (done)
@@ -17,6 +16,8 @@
           Keep ctrl-wheel for this as it matches other apps' behaviors and bare wheel is usually diverted to scrolling a higher encapsulating widget.
 
 ## Improvements
+* Add keyboard shortcuts for "Snap Range" (ctrl-p) and "View Range" (ctrl-i).
+  Needs focus.
 * When dragging a slider, it should snap (-> spinboxes) to "nice" values.
   Something like rounding to Ticker(n=handlePositions).step(a,b) should be good.
 * Spinbox buttons should increment/decrement by Ticker(n=handlePositions).step(a,b)
