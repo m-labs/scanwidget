@@ -454,6 +454,9 @@ class ScanProxy(QtCore.QObject):
             newWidth = ev.size().width() - self.slider.handleWidth()
             # assert refRight > oldLeft
             newScale = newWidth/(refRight - oldLeft)
+            center = (self.realStop + self.realStart)/2
+            if center:
+                newScale = min(newScale, self.dynamicRange/abs(center))
             self.realToPixelTransform = oldLeft, newScale
         else:
             # TODO: self.axis.width() is invalid during object
