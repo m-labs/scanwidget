@@ -373,6 +373,10 @@ class ScanWidget(QtWidgets.QWidget):
         self.realStart = val
         self.axis.update()
 
+    def setNumPoints(self, val):
+        self.numPoints = val
+        self.axis.update()
+
     def handleStopMoved(self, rangeVal):
         # FIXME: this relies on the event being fed back and ending up calling
         # setStop()
@@ -382,10 +386,6 @@ class ScanWidget(QtWidgets.QWidget):
         # FIXME: this relies on the event being fed back and ending up calling
         # setStart()
         self.sigStartMoved.emit(self.rangeToReal(rangeVal))
-
-    def setNumPoints(self, val):
-        self.numPoints = val
-        self.axis.update()
 
     def handleZoom(self, zoomFactor, mouseXPos):
         newScale = self.realToPixelTransform[1] * zoomFactor
