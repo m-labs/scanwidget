@@ -452,7 +452,6 @@ class ScanProxy(QtCore.QObject):
             refWidth = ev.oldSize().width() - self.slider.handleWidth()
             refRight = self.pixelToReal(refWidth)
             newWidth = ev.size().width() - self.slider.handleWidth()
-            # assert refRight > oldLeft
             newScale = newWidth/(refRight - oldLeft)
             center = (self.realStop + self.realStart)/2
             if center:
@@ -473,8 +472,6 @@ class ScanProxy(QtCore.QObject):
             # the slider has already resized itsef or not.
             self.viewRangeInit()
             self.invalidOldSizeExpected = False
-        # assert self.pixelToReal(0) == oldLeft, \
-        # "{}, {}".format(self.pixelToReal(0), oldLeft)
         # Slider will update independently, making sure that the old
         # slider positions are preserved. Because of this, we can be
         # confident that the new slider position will still map to the
