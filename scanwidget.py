@@ -503,6 +503,7 @@ class ScanWidget(QtWidgets.QWidget):
         layout = QtWidgets.QGridLayout()
         # Default size will cause axis to disappear otherwise.
         layout.setRowMinimumHeight(0, 40)
+        layout.setVerticalSpacing(0)
         layout.addWidget(axis, 0, 0, 1, -1)
         layout.addWidget(slider, 1, 0, 1, -1)
         self.setLayout(layout)
