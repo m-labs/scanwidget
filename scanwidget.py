@@ -509,10 +509,13 @@ class ScanWidget(QtWidgets.QWidget):
         self.proxy.sigNumChanged.connect(self.sigNumChanged)
 
         # Context menu entries
-        self.viewRangeAct = QtWidgets.QAction("&View Range", self)
-        self.snapRangeAct = QtWidgets.QAction("&Snap Range", self)
-        self.viewRangeAct.triggered.connect(self.viewRange)
-        self.snapRangeAct.triggered.connect(self.snapRange)
+        self.menu = QtWidgets.QMenu(self)
+        viewRangeAct = QtWidgets.QAction("&View Range", self)
+        viewRangeAct.triggered.connect(self.viewRange)
+        self.menu.addAction(viewRangeAct)
+        snapRangeAct = QtWidgets.QAction("&Snap Range", self)
+        snapRangeAct.triggered.connect(self.snapRange)
+        self.menu.addAction(snapRangeAct)
 
     def setStop(self, val):
         self.proxy.moveStop(val)
@@ -530,7 +533,4 @@ class ScanWidget(QtWidgets.QWidget):
         self.proxy.snapRange()
 
     def contextMenuEvent(self, ev):
-        menu = QtWidgets.QMenu(self)
-        menu.addAction(self.viewRangeAct)
-        menu.addAction(self.snapRangeAct)
-        menu.exec(ev.globalPos())
+        self.menu.popup(ev.globalPos())
