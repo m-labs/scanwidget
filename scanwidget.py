@@ -499,7 +499,6 @@ class ScanWidget(QtWidgets.QWidget):
         self.axis = axis = ScanAxis(zoomFactor)
         self.proxy = ScanProxy(slider, axis, zoomMargin, dynamicRange)
         axis.proxy = self.proxy
-        axis.slider = slider
         slider.setMaximum(1023)
 
         # Layout.
