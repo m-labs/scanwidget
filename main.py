@@ -45,7 +45,7 @@ def main():
     spinboxes[0].setMinimumSize(110, 0)
     spinboxes[2].setMinimumSize(110, 0)
     spinboxes[1].setMinimum(1)
-    spinboxes[1].setMaximum(float("Inf"))
+    spinboxes[1].setMaximum((1 << 31) - 1)
 
     labels = [QtWidgets.QLabel(l) for l in "Start Stop Points".split()]
     labels[0].setStyleSheet("QLabel {color:blue}")
