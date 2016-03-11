@@ -395,7 +395,7 @@ class ScanProxy(QtCore.QObject):
         self.moveStop(self.realStop)
         self.moveStart(self.realStart)
 
-    def zoomToFit(self):
+    def viewRange(self):
         newScale = self.slider.effectiveWidth()/abs(
             self.realStop - self.realStart)
         newScale *= 1 - 2*self.zoomMargin
@@ -416,7 +416,7 @@ class ScanProxy(QtCore.QObject):
     # This function handles handles the slider positions. Slider and axis
     # handle its own width changes; proxy watches for axis width resizeEvent to
     # alter mapping from real to pixel space.
-    def zoomToFitInit(self):
+    def viewRangeInit(self):
         currRangeReal = abs(self.realStop - self.realStart)
         if currRangeReal == 0:
             self.moveStop(self.realStop)
@@ -427,13 +427,13 @@ class ScanProxy(QtCore.QObject):
             # This will force the sliders to have positions on the axis
             # which reflect the start/stop values currently set.
         else:
-            self.zoomToFit()
+            self.viewRange()
         # Notify spinboxes manually, since slider wasn't clicked and will
         # therefore not emit signals.
         self.sigStopMoved.emit(self.realStop)
         self.sigStartMoved.emit(self.realStart)
 
-    def fitToView(self):
+    def snapRange(self):
         lowRange = self.zoomMargin
         highRange = 1 - self.zoomMargin
         newStart = self.pixelToReal(lowRange * self.slider.effectiveWidth())
@@ -470,11 +470,11 @@ class ScanProxy(QtCore.QObject):
             self.realToPixelTransform = oldLeft, newScale
             # We need to reinitialize the pixel transform b/c the old width
             # of the axis is no longer valid. When we have a valid transform,
-            # we can then zoomToFit based on the desired real values.
+            # we can then viewRange based on the desired real values.
             # The slider handle values are invalid before this point as well;
             # we set them to the correct value here, regardless of whether
             # the slider has already resized itsef or not.
-            self.zoomToFitInit()
+            self.viewRangeInit()
             self.invalidOldSizeExpected = False
         # assert self.pixelToReal(0) == oldLeft, \
         # "{}, {}".format(self.pixelToReal(0), oldLeft)
@@ -523,10 +523,10 @@ class ScanWidget(QtWidgets.QWidget):
         slider.installEventFilter(axis)
 
         # Context menu entries
-        self.zoomToFitAct = QtWidgets.QAction("&View Range", self)
-        self.fitToViewAct = QtWidgets.QAction("&Snap Range", self)
-        self.zoomToFitAct.triggered.connect(self.zoomToFit)
-        self.fitToViewAct.triggered.connect(self.fitToView)
+        self.viewRangeAct = QtWidgets.QAction("&View Range", self)
+        self.snapRangeAct = QtWidgets.QAction("&Snap Range", self)
+        self.viewRangeAct.triggered.connect(self.viewRange)
+        self.snapRangeAct.triggered.connect(self.snapRange)
 
     # Spinbox and button slots. Any time the spinboxes change, ScanWidget
     # mirrors it and passes the information to the proxy.
@@ -539,15 +539,15 @@ class ScanWidget(QtWidgets.QWidget):
     def setNumPoints(self, val):
         self.proxy.setNumPoints(val)
 
-    def zoomToFit(self):
-        self.proxy.zoomToFit()
+    def viewRange(self):
+        self.proxy.viewRange()
 
-    def fitToView(self):
-        self.proxy.fitToView()
+    def snapRange(self):
+        self.proxy.snapRange()
 
     def contextMenuEvent(self, ev):
         menu = QtWidgets.QMenu(self)
-        menu.addAction(self.zoomToFitAct)
-        menu.addAction(self.fitToViewAct)
+        menu.addAction(self.viewRangeAct)
+        menu.addAction(self.snapRangeAct)
         print(ev.globalPos())
         menu.exec(ev.globalPos())
