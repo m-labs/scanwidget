@@ -207,7 +207,7 @@ class ScanSlider(QtWidgets.QSlider):
                 self.setSpan(self.startVal, self.stopPos)
 
     def mousePressEvent(self, ev):
-        if self.minimum() == self.maximum() or (ev.buttons() ^ ev.button()):
+        if ev.buttons() ^ ev.button():
             ev.ignore()
             return
 
@@ -281,9 +281,9 @@ class ScanSlider(QtWidgets.QSlider):
         # Qt will snap sliders to 0 or maximum() if given a desired pixel
         # location outside the mapped range. So we manually just don't draw
         # the handles if they are at 0 or max.
-        if 0 < self.startVal < self.maximum():
+        if self.minimum() < self.startVal < self.maximum():
             self.drawHandle(startPainter, "start")
-        if 0 < self.stopVal < self.maximum():
+        if self.minimum() < self.stopVal < self.maximum():
             self.drawHandle(stopPainter, "stop")
 
 
@@ -410,15 +410,13 @@ class ScanProxy(QtCore.QObject):
         highRange = 1 - self.zoomMargin
         newStart = self.pixelToReal(lowRange * self.slider.effectiveWidth())
         newStop = self.pixelToReal(highRange * self.slider.effectiveWidth())
-        sliderRange = self.slider.maximum() - self.slider.minimum()
         # Signals won't fire unless slider was actually grabbed, so
         # manually update so the spinboxes know that knew values were set.
         # self.realStop/Start and the sliders themselves will be updated as a
         # consequence of ValueChanged signal in spinboxes. The slider widget
         # has guards against recursive signals in setSpan().
-        if sliderRange > 0:
-            self.sigStopMoved.emit(newStop)
-            self.sigStartMoved.emit(newStart)
+        self.sigStopMoved.emit(newStop)
+        self.sigStartMoved.emit(newStart)
 
     def wheelEvent(self, ev):
         y = ev.angleDelta().y()
@@ -492,6 +490,7 @@ class ScanWidget(QtWidgets.QWidget):
         self.proxy = ScanProxy(slider, axis, zoomMargin, dynamicRange,
                                zoomFactor)
         axis.proxy = self.proxy
+        slider.setMinimum(0)
         slider.setMaximum(1023)
 
         # Layout.
