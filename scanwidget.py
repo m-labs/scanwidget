@@ -354,9 +354,13 @@ class ScanProxy(QtCore.QObject):
         self.axis.update()
 
     def handleStopMoved(self, rangeVal):
+        # FIXME: this relies on the event being fed back and ending up calling
+        # moveStop()
         self.sigStopMoved.emit(self.rangeToReal(rangeVal))
 
     def handleStartMoved(self, rangeVal):
+        # FIXME: this relies on the event being fed back and ending up calling
+        # moveStart()
         self.sigStartMoved.emit(self.rangeToReal(rangeVal))
 
     def setNumPoints(self, val):
@@ -421,6 +425,8 @@ class ScanProxy(QtCore.QObject):
         # self.realStop/Start and the sliders themselves will be updated as a
         # consequence of ValueChanged signal in spinboxes. The slider widget
         # has guards against recursive signals in setSpan().
+        # FIXME: this relies on the events being fed back and ending up
+        # calling moveStart() and moveStop()
         self.sigStopMoved.emit(newStop)
         self.sigStartMoved.emit(newStart)
 
@@ -434,6 +440,8 @@ class ScanProxy(QtCore.QObject):
                 # That would also match the wheel behavior of an integer
                 # spinbox.
                 z = int(y / 120.)
+                # FIXME: this relies on the event being fed back and ending up
+                # calling setNumPoints()
                 self.sigNumChanged.emit(self.numPoints + z)
                 self.axis.update()
             else:
