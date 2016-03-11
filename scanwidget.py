@@ -10,15 +10,11 @@ logger = logging.getLogger(__name__)
 
 
 class ScanAxis(QtWidgets.QWidget):
-    sigZoom = QtCore.pyqtSignal(float, int)
-    sigPoints = QtCore.pyqtSignal(int)
-
-    def __init__(self, zoomFactor):
+    def __init__(self):
         QtWidgets.QWidget.__init__(self)
         self.proxy = None
         self.sizePolicy().setControlType(QtWidgets.QSizePolicy.ButtonBox)
         self.ticker = Ticker()
-        self.zoomFactor = zoomFactor
 
     def paintEvent(self, ev):
         painter = QtGui.QPainter(self)
@@ -50,29 +46,6 @@ class ScanAxis(QtWidgets.QWidget):
         for p in pixels:
             p_int = int(p)
             painter.drawLine(p_int, 0, p_int, 5)
-        ev.accept()
-
-    def wheelEvent(self, ev):
-        y = ev.angleDelta().y()
-        if y:
-            if ev.modifiers() & QtCore.Qt.ShiftModifier:
-                # If shift+scroll, modify number of points.
-                # TODO: This is not perfect. For high-resolution touchpads you
-                # get many small events with y < 120 which should accumulate.
-                # That would also match the wheel behavior of an integer
-                # spinbox.
-                z = int(y / 120.)
-                self.sigPoints.emit(z)
-            else:
-                z = self.zoomFactor**(y / 120.)
-                # Remove the slider-handle shift correction, b/c none of the
-                # other widgets know about it. If we have the mouse directly
-                # over a tick during a zoom, it should appear as if we are
-                # doing zoom relative to the ticks which live in axis
-                # pixel-space, not slider pixel-space.
-                self.sigZoom.emit(
-                    z, ev.x() - self.proxy.slider.handleWidth()/2)
-            self.update()
         ev.accept()
 
 
@@ -320,7 +293,7 @@ class ScanProxy(QtCore.QObject):
     sigStopMoved = QtCore.pyqtSignal(float)
     sigNumPoints = QtCore.pyqtSignal(int)
 
-    def __init__(self, slider, axis, zoomMargin, dynamicRange):
+    def __init__(self, slider, axis, zoomMargin, dynamicRange, zoomFactor):
         QtCore.QObject.__init__(self)
         self.axis = axis
         self.slider = slider
@@ -329,6 +302,7 @@ class ScanProxy(QtCore.QObject):
         self.numPoints = 10
         self.zoomMargin = zoomMargin
         self.dynamicRange = dynamicRange
+        self.zoomFactor = zoomFactor
 
         # Transform that maps the spinboxes to a pixel position on the
         # axis. 0 to axis.width() exclusive indicate positions which will be
@@ -448,9 +422,31 @@ class ScanProxy(QtCore.QObject):
             self.sigStopMoved.emit(newStop)
             self.sigStartMoved.emit(newStart)
 
+    def wheelEvent(self, ev):
+        y = ev.angleDelta().y()
+        if y:
+            if ev.modifiers() & QtCore.Qt.ShiftModifier:
+                # If shift+scroll, modify number of points.
+                # TODO: This is not perfect. For high-resolution touchpads you
+                # get many small events with y < 120 which should accumulate.
+                # That would also match the wheel behavior of an integer
+                # spinbox.
+                z = int(y / 120.)
+                self.handleNumPoints(z)
+            else:
+                z = self.zoomFactor**(y / 120.)
+                # Remove the slider-handle shift correction, b/c none of the
+                # other widgets know about it. If we have the mouse directly
+                # over a tick during a zoom, it should appear as if we are
+                # doing zoom relative to the ticks which live in axis
+                # pixel-space, not slider pixel-space.
+                self.handleZoom(z, ev.x() - self.slider.handleWidth()/2)
+            self.axis.update()
+        ev.accept()
+
     def eventFilter(self, obj, ev):
-        if obj is self.slider and ev.type() == QtCore.QEvent.Wheel:
-            self.axis.wheelEvent(ev)
+        if ev.type() == QtCore.QEvent.Wheel:
+            self.wheelEvent(ev)
             return True
         if not (obj is self.axis and ev.type() == QtCore.QEvent.Resize):
             return False
@@ -494,8 +490,9 @@ class ScanWidget(QtWidgets.QWidget):
     def __init__(self, zoomFactor=1.05, zoomMargin=.1, dynamicRange=1e8):
         QtWidgets.QWidget.__init__(self)
         self.slider = slider = ScanSlider()
-        self.axis = axis = ScanAxis(zoomFactor)
-        self.proxy = ScanProxy(slider, axis, zoomMargin, dynamicRange)
+        self.axis = axis = ScanAxis()
+        self.proxy = ScanProxy(slider, axis, zoomMargin, dynamicRange,
+                               zoomFactor)
         axis.proxy = self.proxy
         slider.setMaximum(1023)
 
@@ -514,8 +511,6 @@ class ScanWidget(QtWidgets.QWidget):
         self.proxy.sigStopMoved.connect(self.sigStopMoved)
         self.proxy.sigStartMoved.connect(self.sigStartMoved)
         self.proxy.sigNumPoints.connect(self.sigNumChanged)
-        axis.sigZoom.connect(self.proxy.handleZoom)
-        axis.sigPoints.connect(self.proxy.handleNumPoints)
 
         # Connect event observers.
         axis.installEventFilter(self.proxy)
