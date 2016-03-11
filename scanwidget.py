@@ -15,6 +15,7 @@ class ScanAxis(QtWidgets.QWidget):
         self.proxy = None
         self.sizePolicy().setControlType(QtWidgets.QSizePolicy.ButtonBox)
         self.ticker = Ticker()
+        self.setMinimumHeight(40)
 
     def paintEvent(self, ev):
         painter = QtGui.QPainter(self)
@@ -495,8 +496,6 @@ class ScanWidget(QtWidgets.QWidget):
 
         # Layout.
         layout = QtWidgets.QGridLayout()
-        # Default size will cause axis to disappear otherwise.
-        layout.setRowMinimumHeight(0, 40)
         layout.setVerticalSpacing(0)
         layout.addWidget(axis, 0, 0, 1, -1)
         layout.addWidget(slider, 1, 0, 1, -1)
