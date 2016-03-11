@@ -352,9 +352,6 @@ class ScanProxy(QtCore.QObject):
     def handleStartMoved(self, rangeVal):
         self.sigStartMoved.emit(self.rangeToReal(rangeVal))
 
-    def handleNumPoints(self, inc):
-        self.sigNumPoints.emit(self.numPoints + inc)
-
     def setNumPoints(self, val):
         self.numPoints = val
         self.axis.update()
@@ -432,7 +429,8 @@ class ScanProxy(QtCore.QObject):
                 # That would also match the wheel behavior of an integer
                 # spinbox.
                 z = int(y / 120.)
-                self.handleNumPoints(z)
+                self.sigNumPoints.emit(self.numPoints + z)
+                self.axis.update()
             else:
                 z = self.zoomFactor**(y / 120.)
                 # Remove the slider-handle shift correction, b/c none of the
@@ -441,7 +439,6 @@ class ScanProxy(QtCore.QObject):
                 # doing zoom relative to the ticks which live in axis
                 # pixel-space, not slider pixel-space.
                 self.handleZoom(z, ev.x() - self.slider.handleWidth()/2)
-            self.axis.update()
         ev.accept()
 
     def eventFilter(self, obj, ev):
