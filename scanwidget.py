@@ -463,14 +463,14 @@ class ScanProxy(QtCore.QObject):
             newWidth = ev.size().width() - self.slider.handleWidth()
             # assert refRight > oldLeft
             newScale = newWidth/(refRight - oldLeft)
-            self.realToPixelTransform = oldLeft, newScale
+            self.realToPixelTransform = -oldLeft, newScale
         else:
             # TODO: self.axis.width() is invalid during object
             # construction. The width will change when placed in a
             # layout WITHOUT a resizeEvent. Why?
-            oldLeft = ev.size().width()/2
+            oldLeft = -ev.size().width()/2
             newScale = 1.0
-            self.realToPixelTransform = oldLeft, newScale
+            self.realToPixelTransform = -oldLeft, newScale
             # We need to reinitialize the pixel transform b/c the old width
             # of the axis is no longer valid. When we have a valid transform,
             # we can then zoomToFit based on the desired real values.
