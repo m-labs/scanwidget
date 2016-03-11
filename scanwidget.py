@@ -167,10 +167,6 @@ class ScanSlider(QtWidgets.QSlider):
         opt.subControls = QtWidgets.QStyle.SC_SliderHandle
         painter.drawComplexControl(QtWidgets.QStyle.CC_Slider, opt)
 
-    # def triggerAction(self, action, slider):
-    #     if action == QtWidgets.QAbstractSlider.SliderSingleStepAdd:
-    #         if
-
     def setSpan(self, low, high):
         # TODO: Is this necessary? QStyle::sliderPositionFromValue appears
         # to clamp already.
@@ -483,15 +479,15 @@ class ScanWidget(QtWidgets.QWidget):
     sigStopMoved = QtCore.pyqtSignal(float)
     sigNumChanged = QtCore.pyqtSignal(int)
 
-    def __init__(self, zoomFactor=1.05, zoomMargin=.1, dynamicRange=1e8):
+    def __init__(self, zoomFactor=1.05, zoomMargin=.1, dynamicRange=1e9):
         QtWidgets.QWidget.__init__(self)
         self.slider = slider = ScanSlider()
+        slider.setMinimum(0)
+        slider.setMaximum(1023)
         self.axis = axis = ScanAxis()
         self.proxy = ScanProxy(slider, axis, zoomMargin, dynamicRange,
                                zoomFactor)
         axis.proxy = self.proxy
-        slider.setMinimum(0)
-        slider.setMaximum(1023)
 
         # Layout.
         layout = QtWidgets.QVBoxLayout()
@@ -517,8 +513,6 @@ class ScanWidget(QtWidgets.QWidget):
         self.viewRangeAct.triggered.connect(self.viewRange)
         self.snapRangeAct.triggered.connect(self.snapRange)
 
-    # Spinbox and button slots. Any time the spinboxes change, ScanWidget
-    # mirrors it and passes the information to the proxy.
     def setStop(self, val):
         self.proxy.moveStop(val)
 
