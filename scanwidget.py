@@ -386,9 +386,9 @@ class ScanProxy(QtCore.QObject):
     def handleZoom(self, zoomFactor, mouseXPos):
         newScale = self.realToPixelTransform[1] * zoomFactor
         refReal = self.pixelToReal(mouseXPos)
-        if abs(refReal)/newScale < 1/self.dynamicRange:
-            return
         newLeft = mouseXPos/newScale - refReal
+        if abs(newLeft*newScale) > self.dynamicRange:
+            return
         self.realToPixelTransform = newLeft, newScale
         self.moveStop(self.realStop)
         self.moveStart(self.realStart)
@@ -496,7 +496,7 @@ class ScanWidget(QtWidgets.QWidget):
     sigStopMoved = QtCore.pyqtSignal(float)
     sigNumChanged = QtCore.pyqtSignal(int)
 
-    def __init__(self, zoomFactor=1.05, rangeFactor=6, dynamicRange=1e6):
+    def __init__(self, zoomFactor=1.05, rangeFactor=6, dynamicRange=1e8):
         QtWidgets.QWidget.__init__(self)
         self.slider = slider = ScanSlider()
         self.axis = axis = ScanAxis(zoomFactor)
