@@ -334,37 +334,21 @@ class ScanProxy(QtCore.QObject):
         # Because the axis's width will change when placed within a layout,
         # the realToPixelTransform will initially be invalid. It will be set
         # properly during the first resizeEvent, with the below transform.
-        self.realToPixelTransform = self.calculateNewRealToPixel(
-            -self.axis.width()/2, 1.0)
+        self.realToPixelTransform = self.axis.width()/2, 1.
         self.invalidOldSizeExpected = True
-
-    # What real value should map to the axis/slider left? This doesn't depend
-    # on any public members so we can make decisions about centering during
-    # resize and zoom events.
-    def calculateNewRealToPixel(self, targetLeft, targetScale):
-        return QtGui.QTransform.fromScale(targetScale, 1).translate(
-            -targetLeft, 0)
 
     # pixel vals for sliders: 0 to slider_width - 1
     def realToPixel(self, val):
-        rawVal = (QtCore.QPointF(val, 0) * self.realToPixelTransform).x()
+        a, b = self.realToPixelTransform
+        rawVal = b*(val + a)
         # Clamp pixel values to 32 bits, b/c Qt will otherwise wrap values.
-        if rawVal < -(2**31):
-            rawVal = -(2**31)
-        elif rawVal > (2**31 - 1):
-            rawVal = (2**31 - 1)
+        rawVal = min(max(-(1 << 31), rawVal), (1 << 31) - 1)
         return rawVal
 
     # Get a point from pixel units to what the sliders display.
     def pixelToReal(self, val):
-        (revXform, invertible) = self.realToPixelTransform.inverted()
-        if not invertible:
-            revXform = (QtGui.QTransform.fromTranslate(
-                -self.realToPixelTransform.dx(), 0) *
-                        QtGui.QTransform.fromScale(
-                            1/self.realToPixelTransform.m11(), 0))
-        realPoint = QtCore.QPointF(val, 0) * revXform
-        return realPoint.x()
+        a, b = self.realToPixelTransform
+        return val/b - a
 
     def rangeToReal(self, val):
         pixelVal = self.slider.rangeValueToPixelPos(val)
@@ -400,13 +384,12 @@ class ScanProxy(QtCore.QObject):
         self.axis.update()
 
     def handleZoom(self, zoomFactor, mouseXPos):
-        newScale = self.realToPixelTransform.m11() * zoomFactor
+        newScale = self.realToPixelTransform[1] * zoomFactor
         refReal = self.pixelToReal(mouseXPos)
         if abs(refReal)/newScale < 1/self.dynamicRange:
             return
-        newLeft = refReal - mouseXPos/newScale
-        self.realToPixelTransform = self.calculateNewRealToPixel(
-            newLeft, newScale)
+        newLeft = mouseXPos/newScale - refReal
+        self.realToPixelTransform = newLeft, newScale
         self.moveStop(self.realStop)
         self.moveStart(self.realStart)
 
@@ -421,10 +404,9 @@ class ScanProxy(QtCore.QObject):
             return  # Ill-formed snap range- do nothing.
         proportion = self.rangeFactor/(self.rangeFactor - 2)
         newScale = self.slider.effectiveWidth()/(proportion*currRangeReal)
-        newLeft = refSlider - self.slider.effectiveWidth() \
-            / (self.rangeFactor*newScale)
-        self.realToPixelTransform = self.calculateNewRealToPixel(
-            newLeft, newScale)
+        newLeft = (self.slider.effectiveWidth()/(self.rangeFactor*newScale) -
+                   refSlider)
+        self.realToPixelTransform = newLeft, newScale
         self.printTransform()
         self.moveStop(self.realStop)
         self.moveStart(self.realStart)
@@ -466,8 +448,7 @@ class ScanProxy(QtCore.QObject):
             oldLeft = -ev.size().width()/2
             newScale = 1.0
             self.invalidOldSizeExpected = False
-        self.realToPixelTransform = self.calculateNewRealToPixel(
-            oldLeft, newScale)
+        self.realToPixelTransform = oldLeft, newScale
         # assert self.pixelToReal(0) == oldLeft, \
         # "{}, {}".format(self.pixelToReal(0), oldLeft)
         # Slider will update independently, making sure that the old
@@ -477,11 +458,7 @@ class ScanProxy(QtCore.QObject):
         return False
 
     def printTransform(self):
-        print("m11: {}, dx: {}".format(
-            self.realToPixelTransform.m11(), self.realToPixelTransform.dx()))
-        (inverted, invertible) = self.realToPixelTransform.inverted()
-        print("m11: {}, dx: {}, singular: {}".format(
-            inverted.m11(), inverted.dx(), not invertible))
+        print(self.realToPixelTransform)
 
 
 class ScanWidget(QtWidgets.QWidget):
