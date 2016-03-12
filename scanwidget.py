@@ -464,7 +464,8 @@ class ScanWidget(QtWidgets.QWidget):
                 # calling setNumPoints()
                 self.sigNumChanged.emit(self.numPoints + z)
                 self.axis.update()
-            else:
+                ev.accept()
+            elif ev.modifiers() & QtCore.Qt.ControlModifier:
                 z = self.zoomFactor**(y / 120.)
                 # Remove the slider-handle shift correction, b/c none of the
                 # other widgets know about it. If we have the mouse directly
@@ -472,7 +473,9 @@ class ScanWidget(QtWidgets.QWidget):
                 # doing zoom relative to the ticks which live in axis
                 # pixel-space, not slider pixel-space.
                 self.handleZoom(z, ev.x() - self.slider.handleWidth()/2)
-        ev.accept()
+                ev.accept()
+            else:
+                ev.ignore()
 
     def eventFilter(self, obj, ev):
         if ev.type() == QtCore.QEvent.Wheel:
