@@ -15,6 +15,10 @@ class ScanAxis(QtWidgets.QWidget):
         self.proxy = None
         self.sizePolicy().setControlType(QtWidgets.QSizePolicy.ButtonBox)
         self.ticker = Ticker()
+        qfm = QtGui.QFontMetrics(QtGui.QFont())
+        lineSpacing = qfm.lineSpacing()
+        descent = qfm.descent()
+        self.setMinimumHeight(2*lineSpacing + descent + 5 + 5)
 
     def paintEvent(self, ev):
         painter = QtGui.QPainter(self)
@@ -22,7 +26,6 @@ class ScanAxis(QtWidgets.QWidget):
         avgCharWidth = qfm.averageCharWidth()
         lineSpacing = qfm.lineSpacing()
         descent = qfm.descent()
-        self.setMinimumHeight(2*lineSpacing + descent + 5 + 5)
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
         # The center of the slider handles should reflect what's displayed
         # on the spinboxes.
