@@ -62,20 +62,19 @@ class ScanSlider(QtWidgets.QSlider):
 
     def __init__(self):
         QtWidgets.QSlider.__init__(self, QtCore.Qt.Horizontal)
-        self.startPos = 0  # Pos and Val can differ in event handling.
+        self.startPos = None  # Pos and Val can differ in event handling.
         # perhaps prevPos and currPos is more accurate.
-        self.stopPos = 99
-        self.startVal = 0
-        self.stopVal = 99
-        self.offset = 0
-        self.position = 0
+        self.stopPos = None
+        self.startVal = None
+        self.stopVal = None
+        self.offset = None
+        self.position = None
         self.stopPressed = QtWidgets.QStyle.SC_None
         self.startPressed = QtWidgets.QStyle.SC_None
         self.firstMovement = False  # State var for handling slider overlap.
         self.blockTracking = False
 
-        self.setMinimum(0)
-        self.setMaximum(4095)
+        self.setRange(0, 4095)
 
         # We need fake sliders to keep around so that we can dynamically
         # set the stylesheets for drawing each slider later. See paintEvent.
@@ -175,36 +174,33 @@ class ScanSlider(QtWidgets.QSlider):
         opt.subControls = QtWidgets.QStyle.SC_SliderHandle
         painter.drawComplexControl(QtWidgets.QStyle.CC_Slider, opt)
 
-    def setSpan(self, low, high):
+    def setStartPosition(self, val):
+        if val == self.startPos:
+            return
+        if not self.hasTracking() or self.blockTracking:
+            return
+        self.startPos = val
         # TODO: Is this necessary? QStyle::sliderPositionFromValue appears
         # to clamp already.
-        low = min(max(self.minimum(), low), self.maximum())
-        high = min(max(self.minimum(), high), self.maximum())
-
-        if low != self.startVal or high != self.stopVal:
-            if low != self.startVal:
-                self.startVal = low
-                self.startPos = low
-            if high != self.stopVal:
-                self.stopVal = high
-                self.stopPos = high
+        low = min(max(self.minimum(), val), self.maximum())
+        if low != self.startVal:
+            self.startVal = low
+            self.startPos = low
             self.update()
 
-    def setStartPosition(self, val):
-        if val != self.startPos:
-            self.startPos = val
-            if not self.hasTracking():
-                self.update()
-            if self.hasTracking() and not self.blockTracking:
-                self.setSpan(self.startPos, self.stopVal)
-
     def setStopPosition(self, val):
-        if val != self.stopPos:
-            self.stopPos = val
-            if not self.hasTracking():
-                self.update()
-            if self.hasTracking() and not self.blockTracking:
-                self.setSpan(self.startVal, self.stopPos)
+        if val == self.stopPos:
+            return
+        if not self.hasTracking() or self.blockTracking:
+            return
+        self.stopPos = val
+        # TODO: Is this necessary? QStyle::sliderPositionFromValue appears
+        # to clamp already.
+        high = min(max(self.minimum(), val), self.maximum())
+        if high != self.stopVal:
+            self.stopVal = high
+            self.stopPos = high
+            self.update()
 
     def mousePressEvent(self, ev):
         if ev.buttons() ^ ev.button():
@@ -318,9 +314,9 @@ class ScanWidget(QtWidgets.QWidget):
         snapRangeAct.triggered.connect(self.snapRange)
         self.menu.addAction(snapRangeAct)
 
-        self.realStart = -1.
-        self.realStop = 1.
-        self.numPoints = 11
+        self.realStart = None
+        self.realStop = None
+        self.numPoints = None
         self.zoomMargin = zoomMargin
         self.dynamicRange = dynamicRange
         self.zoomFactor = zoomFactor
@@ -425,8 +421,8 @@ class ScanWidget(QtWidgets.QWidget):
         highRange = 1 - self.zoomMargin
         newStart = self.pixelToReal(lowRange * self.slider.effectiveWidth())
         newStop = self.pixelToReal(highRange * self.slider.effectiveWidth())
-        self.setStop(newStop)
         self.setStart(newStart)
+        self.setStop(newStop)
 
     def wheelEvent(self, ev):
         y = ev.angleDelta().y()
@@ -469,8 +465,5 @@ class ScanWidget(QtWidgets.QWidget):
                 newScale = min(newScale, self.dynamicRange/abs(center))
             self.setView(oldLeft, newScale)
         else:
-            # TODO: self.axis.width() is invalid during object
-            # construction. The width will change when placed in a
-            # layout WITHOUT a resizeEvent. Why?
             self.viewRange()
         return False
