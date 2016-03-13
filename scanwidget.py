@@ -72,7 +72,6 @@ class ScanSlider(QtWidgets.QSlider):
         self.stopPressed = QtWidgets.QStyle.SC_None
         self.startPressed = QtWidgets.QStyle.SC_None
         self.firstMovement = False  # State var for handling slider overlap.
-        self.blockTracking = False
 
         self.setRange(0, 4095)
 
@@ -169,8 +168,6 @@ class ScanSlider(QtWidgets.QSlider):
         if val == self.startPos:
             return
         self.startPos = val
-        if not self.hasTracking() or self.blockTracking:
-            return
         # TODO: Is this necessary? QStyle::sliderPositionFromValue appears
         # to clamp already.
         low = min(max(self.minimum(), val), self.maximum())
@@ -183,8 +180,6 @@ class ScanSlider(QtWidgets.QSlider):
         if val == self.stopPos:
             return
         self.stopPos = val
-        if not self.hasTracking() or self.blockTracking:
-            return
         # TODO: Is this necessary? QStyle::sliderPositionFromValue appears
         # to clamp already.
         high = min(max(self.minimum(), val), self.maximum())
@@ -240,17 +235,24 @@ class ScanSlider(QtWidgets.QSlider):
 
         if self.startPressed == QtWidgets.QStyle.SC_SliderHandle:
             self.setStartPosition(newPos)
-            self.sigStartMoved.emit(self.startPos)
+            if self.hasTracking():
+                self.sigStartMoved.emit(self.startPos)
 
         if self.stopPressed == QtWidgets.QStyle.SC_SliderHandle:
             self.setStopPosition(newPos)
-            self.sigStopMoved.emit(self.stopPos)
+            if self.hasTracking():
+                self.sigStopMoved.emit(self.stopPos)
 
         ev.accept()
 
     def mouseReleaseEvent(self, ev):
         QtWidgets.QSlider.mouseReleaseEvent(self, ev)
         self.setSliderDown(False)  # AbstractSlider needs this
+        if not self.hasTracking():
+            if self.startPressed == QtWidgets.QStyle.SC_SliderHandle:
+                self.sigStartMoved.emit(self.startPos)
+            if self.stopPressed == QtWidgets.QStyle.SC_SliderHandle:
+                self.sigStopMoved.emit(self.stopPos)
         self.startPressed = QtWidgets.QStyle.SC_None
         self.stopPressed = QtWidgets.QStyle.SC_None
 
