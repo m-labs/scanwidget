@@ -137,35 +137,26 @@ class ScanSlider(QtWidgets.QSlider):
         return gr.width() - self.handleWidth()
 
     def handleMousePress(self, pos, control, val, handle):
-        opt = QtWidgets.QStyleOptionSlider()
-        self.initHandleStyleOption(opt, handle)
-        startAtEdges = (handle == "start" and
-                        (self.startVal == self.minimum() or
-                         self.startVal == self.maximum()))
-        stopAtEdges = (handle == "stop" and
-                       (self.stopVal == self.minimum() or
-                        self.stopVal == self.maximum()))
-
         # If chosen slider at edge, treat it as non-interactive.
-        if startAtEdges or stopAtEdges:
+        v = self.startVal if handle == "start" else self.stopVal
+        if v in (self.minimum(), self.maximum()):
             return QtWidgets.QStyle.SC_None
 
-        oldControl = control
-        control = self.style().hitTestComplexControl(
+        opt = QtWidgets.QStyleOptionSlider()
+        self.initHandleStyleOption(opt, handle)
+        newControl = self.style().hitTestComplexControl(
             QtWidgets.QStyle.CC_Slider, opt, pos, self)
         sr = self.style().subControlRect(QtWidgets.QStyle.CC_Slider, opt,
                                          QtWidgets.QStyle.SC_SliderHandle,
                                          self)
-        if control == QtWidgets.QStyle.SC_SliderHandle:
+        if newControl == QtWidgets.QStyle.SC_SliderHandle:
             # no pick()- slider orientation static
             self.offset = pos.x() - sr.topLeft().x()
             self.setSliderDown(True)
-            # emit
-
         # Needed?
-        if control != oldControl:
+        if newControl != control:
             self.update(sr)
-        return control
+        return newControl
 
     def drawHandle(self, painter, handle):
         opt = QtWidgets.QStyleOptionSlider()
@@ -177,9 +168,9 @@ class ScanSlider(QtWidgets.QSlider):
     def setStartPosition(self, val):
         if val == self.startPos:
             return
+        self.startPos = val
         if not self.hasTracking() or self.blockTracking:
             return
-        self.startPos = val
         # TODO: Is this necessary? QStyle::sliderPositionFromValue appears
         # to clamp already.
         low = min(max(self.minimum(), val), self.maximum())
@@ -191,9 +182,9 @@ class ScanSlider(QtWidgets.QSlider):
     def setStopPosition(self, val):
         if val == self.stopPos:
             return
+        self.stopPos = val
         if not self.hasTracking() or self.blockTracking:
             return
-        self.stopPos = val
         # TODO: Is this necessary? QStyle::sliderPositionFromValue appears
         # to clamp already.
         high = min(max(self.minimum(), val), self.maximum())
