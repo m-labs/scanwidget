@@ -195,8 +195,6 @@ class ScanSlider(QtWidgets.QSlider):
             self.startPos = val
             if not self.hasTracking():
                 self.update()
-            if self.isSliderDown():
-                self.sigStartMoved.emit(self.startPos)
             if self.hasTracking() and not self.blockTracking:
                 self.setSpan(self.startPos, self.stopVal)
 
@@ -205,8 +203,6 @@ class ScanSlider(QtWidgets.QSlider):
             self.stopPos = val
             if not self.hasTracking():
                 self.update()
-            if self.isSliderDown():
-                self.sigStopMoved.emit(self.stopPos)
             if self.hasTracking() and not self.blockTracking:
                 self.setSpan(self.startVal, self.stopPos)
 
@@ -257,9 +253,11 @@ class ScanSlider(QtWidgets.QSlider):
 
         if self.startPressed == QtWidgets.QStyle.SC_SliderHandle:
             self.setStartPosition(newPos)
+            self.sigStartMoved.emit(self.startPos)
 
         if self.stopPressed == QtWidgets.QStyle.SC_SliderHandle:
             self.setStopPosition(newPos)
+            self.sigStopMoved.emit(self.stopPos)
 
         ev.accept()
 
@@ -327,14 +325,7 @@ class ScanWidget(QtWidgets.QWidget):
         self.dynamicRange = dynamicRange
         self.zoomFactor = zoomFactor
 
-        # Transform that maps the spinboxes to a pixel position on the
-        # axis. 0 to axis.width() exclusive indicate positions which will be
-        # displayed on the axis.
-        # Because the axis's width will change when placed within a layout,
-        # the realToPixelTransform will initially be invalid. It will be set
-        # properly during the first resizeEvent, with the below transform.
         self.realToPixelTransform = -self.axis.width()/2, 1.
-        self.invalidOldSizeExpected = True
 
         # Connect event observers.
         axis.installEventFilter(self)
@@ -353,7 +344,6 @@ class ScanWidget(QtWidgets.QWidget):
         rawVal = min(max(-(1 << 31), rawVal), (1 << 31) - 1)
         return rawVal
 
-    # Get a point from pixel units to what the sliders display.
     def pixelToReal(self, val):
         a, b = self.realToPixelTransform
         return val/b + a
@@ -366,31 +356,50 @@ class ScanWidget(QtWidgets.QWidget):
         pixelVal = self.realToPixel(val)
         return self.slider.pixelPosToRangeValue(pixelVal)
 
+    def setView(self, left, scale):
+        self.realToPixelTransform = left, scale
+        sliderX = self.realToRange(self.realStop)
+        self.slider.setStopPosition(sliderX)
+        sliderX = self.realToRange(self.realStart)
+        self.slider.setStartPosition(sliderX)
+        self.axis.update()
+
     def setStop(self, val):
+        if self.realStop == val:
+            return
         sliderX = self.realToRange(val)
         self.slider.setStopPosition(sliderX)
         self.realStop = val
         self.axis.update()  # Number of points ticks changed positions.
+        self.sigStopMoved.emit(val)
 
     def setStart(self, val):
+        if self.realStart == val:
+            return
         sliderX = self.realToRange(val)
         self.slider.setStartPosition(sliderX)
         self.realStart = val
         self.axis.update()
+        self.sigStartMoved.emit(val)
 
     def setNumPoints(self, val):
+        if self.numPoints == val:
+            return
         self.numPoints = val
         self.axis.update()
+        self.sigNumChanged.emit(val)
 
     def handleStopMoved(self, rangeVal):
-        # FIXME: this relies on the event being fed back and ending up calling
-        # setStop()
-        self.sigStopMoved.emit(self.rangeToReal(rangeVal))
+        val = self.rangeToReal(rangeVal)
+        self.realStop = val
+        self.axis.update()
+        self.sigStopMoved.emit(val)
 
     def handleStartMoved(self, rangeVal):
-        # FIXME: this relies on the event being fed back and ending up calling
-        # setStart()
-        self.sigStartMoved.emit(self.rangeToReal(rangeVal))
+        val = self.rangeToReal(rangeVal)
+        self.realStart = val
+        self.axis.update()
+        self.sigStartMoved.emit(val)
 
     def handleZoom(self, zoomFactor, mouseXPos):
         newScale = self.realToPixelTransform[1] * zoomFactor
@@ -399,9 +408,7 @@ class ScanWidget(QtWidgets.QWidget):
         newZero = newLeft*newScale + self.slider.effectiveWidth()/2
         if zoomFactor > 1 and abs(newZero) > self.dynamicRange:
             return
-        self.realToPixelTransform = newLeft, newScale
-        self.setStop(self.realStop)
-        self.setStart(self.realStart)
+        self.setView(newLeft, newScale)
 
     def viewRange(self):
         newScale = self.slider.effectiveWidth()/abs(
@@ -411,49 +418,15 @@ class ScanWidget(QtWidgets.QWidget):
         if newCenter:
             newScale = min(newScale, self.dynamicRange/abs(newCenter))
         newLeft = newCenter - self.slider.effectiveWidth()/2/newScale
-        self.realToPixelTransform = newLeft, newScale
-        self.setStop(self.realStop)
-        self.setStart(self.realStart)
-        self.axis.update()  # Axis normally takes care to update itself during
-        # zoom. In this code path however, the zoom didn't arrive via the axis
-        # widget, so we need to notify manually.
-
-    # This function is called if the axis width, slider width, and slider
-    # positions are in an inconsistent state, to initialize the widget.
-    # This function handles handles the slider positions. Slider and axis
-    # handle its own width changes; proxy watches for axis width resizeEvent to
-    # alter mapping from real to pixel space.
-    def viewRangeInit(self):
-        currRangeReal = abs(self.realStop - self.realStart)
-        if currRangeReal == 0:
-            self.setStop(self.realStop)
-            self.setStart(self.realStart)
-            # Ill-formed snap range- move the sliders anyway,
-            # because we arrived here during widget
-            # initialization, where the slider positions are likely invalid.
-            # This will force the sliders to have positions on the axis
-            # which reflect the start/stop values currently set.
-        else:
-            self.viewRange()
-        # Notify spinboxes manually, since slider wasn't clicked and will
-        # therefore not emit signals.
-        self.sigStopMoved.emit(self.realStop)
-        self.sigStartMoved.emit(self.realStart)
+        self.setView(newLeft, newScale)
 
     def snapRange(self):
         lowRange = self.zoomMargin
         highRange = 1 - self.zoomMargin
         newStart = self.pixelToReal(lowRange * self.slider.effectiveWidth())
         newStop = self.pixelToReal(highRange * self.slider.effectiveWidth())
-        # Signals won't fire unless slider was actually grabbed, so
-        # manually update so the spinboxes know that knew values were set.
-        # self.realStop/Start and the sliders themselves will be updated as a
-        # consequence of ValueChanged signal in spinboxes. The slider widget
-        # has guards against recursive signals in setSpan().
-        # FIXME: this relies on the events being fed back and ending up
-        # calling setStart() and setStop()
-        self.sigStopMoved.emit(newStop)
-        self.sigStartMoved.emit(newStart)
+        self.setStop(newStop)
+        self.setStart(newStart)
 
     def wheelEvent(self, ev):
         y = ev.angleDelta().y()
@@ -465,10 +438,7 @@ class ScanWidget(QtWidgets.QWidget):
                 # That would also match the wheel behavior of an integer
                 # spinbox.
                 z = int(y / 120.)
-                # FIXME: this relies on the event being fed back and ending up
-                # calling setNumPoints()
-                self.sigNumChanged.emit(self.numPoints + z)
-                self.axis.update()
+                self.setNumPoints(max(1, self.numPoints + z))
                 ev.accept()
             elif ev.modifiers() & QtCore.Qt.ControlModifier:
                 z = self.zoomFactor**(y / 120.)
@@ -497,24 +467,10 @@ class ScanWidget(QtWidgets.QWidget):
             center = (self.realStop + self.realStart)/2
             if center:
                 newScale = min(newScale, self.dynamicRange/abs(center))
-            self.realToPixelTransform = oldLeft, newScale
+            self.setView(oldLeft, newScale)
         else:
             # TODO: self.axis.width() is invalid during object
             # construction. The width will change when placed in a
             # layout WITHOUT a resizeEvent. Why?
-            oldLeft = -ev.size().width()/2
-            newScale = 1.0
-            self.realToPixelTransform = oldLeft, newScale
-            # We need to reinitialize the pixel transform b/c the old width
-            # of the axis is no longer valid. When we have a valid transform,
-            # we can then viewRange based on the desired real values.
-            # The slider handle values are invalid before this point as well;
-            # we set them to the correct value here, regardless of whether
-            # the slider has already resized itsef or not.
-            self.viewRangeInit()
-            self.invalidOldSizeExpected = False
-        # Slider will update independently, making sure that the old
-        # slider positions are preserved. Because of this, we can be
-        # confident that the new slider position will still map to the
-        # same positions in the new axis-space.
+            self.viewRange()
         return False
