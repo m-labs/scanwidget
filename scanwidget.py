@@ -404,10 +404,7 @@ class ScanWidget(QtWidgets.QWidget):
             self.viewRange()
 
     def eventFilter(self, obj, ev):
-        if ev.type() == QtCore.QEvent.Wheel:
-            ev.ignore()
-            return True
-        if ev.type() == QtCore.QEvent.Resize:
+        if ev.type() in (QtCore.QEvent.Wheel, QtCore.QEvent.Resize):
             ev.ignore()
             return True
         return False
