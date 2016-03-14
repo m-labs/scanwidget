@@ -62,9 +62,6 @@ class ScanSlider(QtWidgets.QSlider):
 
     def __init__(self):
         QtWidgets.QSlider.__init__(self, QtCore.Qt.Horizontal)
-        self.startPos = None  # Pos and Val can differ in event handling.
-        # perhaps prevPos and currPos is more accurate.
-        self.stopPos = None
         self.startVal = None
         self.stopVal = None
         self.offset = None
@@ -87,14 +84,16 @@ class ScanSlider(QtWidgets.QSlider):
     # We basically superimpose two QSliders on top of each other, discarding
     # the state that remains constant between the two when drawing.
     # Everything except the handles remain constant.
-    def initHandleStyleOption(self, opt, handle):
+    def initHandleStyleOption(self, handle):
+        opt = QtWidgets.QStyleOptionSlider()
         self.initStyleOption(opt)
         if handle == "start":
-            opt.sliderPosition = self.startPos
+            opt.sliderPosition = self.startVal
             opt.sliderValue = self.startVal
         elif handle == "stop":
-            opt.sliderPosition = self.stopPos
+            opt.sliderPosition = self.stopVal
             opt.sliderValue = self.stopVal
+        return opt
 
     # We get the range of each slider separately.
     def pixelPosToRangeValue(self, pos):
@@ -141,8 +140,7 @@ class ScanSlider(QtWidgets.QSlider):
         if v in (self.minimum(), self.maximum()):
             return QtWidgets.QStyle.SC_None
 
-        opt = QtWidgets.QStyleOptionSlider()
-        self.initHandleStyleOption(opt, handle)
+        opt = self.initHandleStyleOption(handle)
         newControl = self.style().hitTestComplexControl(
             QtWidgets.QStyle.CC_Slider, opt, pos, self)
         sr = self.style().subControlRect(QtWidgets.QStyle.CC_Slider, opt,
@@ -158,35 +156,21 @@ class ScanSlider(QtWidgets.QSlider):
         return newControl
 
     def drawHandle(self, painter, handle):
-        opt = QtWidgets.QStyleOptionSlider()
-        self.initStyleOption(opt)
-        self.initHandleStyleOption(opt, handle)
+        opt = self.initHandleStyleOption(handle)
         opt.subControls = QtWidgets.QStyle.SC_SliderHandle
         painter.drawComplexControl(QtWidgets.QStyle.CC_Slider, opt)
 
     def setStartPosition(self, val):
-        if val == self.startPos:
+        if val == self.startVal:
             return
-        self.startPos = val
-        # TODO: Is this necessary? QStyle::sliderPositionFromValue appears
-        # to clamp already.
-        low = min(max(self.minimum(), val), self.maximum())
-        if low != self.startVal:
-            self.startVal = low
-            self.startPos = low
-            self.update()
+        self.startVal = val
+        self.update()
 
     def setStopPosition(self, val):
-        if val == self.stopPos:
+        if val == self.stopVal:
             return
-        self.stopPos = val
-        # TODO: Is this necessary? QStyle::sliderPositionFromValue appears
-        # to clamp already.
-        high = min(max(self.minimum(), val), self.maximum())
-        if high != self.stopVal:
-            self.stopVal = high
-            self.stopPos = high
-            self.update()
+        self.stopVal = val
+        self.update()
 
     def mousePressEvent(self, ev):
         if ev.buttons() ^ ev.button():
@@ -225,10 +209,10 @@ class ScanSlider(QtWidgets.QSlider):
                 newPos = self.position
 
         if self.firstMovement:
-            if self.startPos == self.stopPos:
+            if self.startVal == self.stopVal:
                 # StopSlider is preferred, except in the case where
                 # start == max possible value the slider can take.
-                if self.startPos == self.maximum():
+                if self.startVal == self.maximum():
                     self.startPressed = QtWidgets.QStyle.SC_SliderHandle
                     self.stopPressed = QtWidgets.QStyle.SC_None
                 self.firstMovement = False
@@ -236,12 +220,12 @@ class ScanSlider(QtWidgets.QSlider):
         if self.startPressed == QtWidgets.QStyle.SC_SliderHandle:
             self.setStartPosition(newPos)
             if self.hasTracking():
-                self.sigStartMoved.emit(self.startPos)
+                self.sigStartMoved.emit(self.startVal)
 
         if self.stopPressed == QtWidgets.QStyle.SC_SliderHandle:
             self.setStopPosition(newPos)
             if self.hasTracking():
-                self.sigStopMoved.emit(self.stopPos)
+                self.sigStopMoved.emit(self.stopVal)
 
         ev.accept()
 
@@ -250,9 +234,9 @@ class ScanSlider(QtWidgets.QSlider):
         self.setSliderDown(False)  # AbstractSlider needs this
         if not self.hasTracking():
             if self.startPressed == QtWidgets.QStyle.SC_SliderHandle:
-                self.sigStartMoved.emit(self.startPos)
+                self.sigStartMoved.emit(self.startVal)
             if self.stopPressed == QtWidgets.QStyle.SC_SliderHandle:
-                self.sigStopMoved.emit(self.stopPos)
+                self.sigStopMoved.emit(self.stopVal)
         self.startPressed = QtWidgets.QStyle.SC_None
         self.stopPressed = QtWidgets.QStyle.SC_None
 
