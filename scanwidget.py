@@ -72,6 +72,10 @@ class ScanSlider(QtWidgets.QSlider):
 
         # We need fake sliders to keep around so that we can dynamically
         # set the stylesheets for drawing each slider later. See paintEvent.
+        # QPalettes would be nicer to use, since palette entries can be set
+        # individually for each slider handle, but Windows 7 does not
+        # use them. This seems to be the only way to override the colors
+        # regardless of platform.
         self.dummyStartSlider = QtWidgets.QSlider()
         self.dummyStopSlider = QtWidgets.QSlider()
         self.dummyStartSlider.setStyleSheet(
@@ -126,28 +130,23 @@ class ScanSlider(QtWidgets.QSlider):
         opt.subControls = QtWidgets.QStyle.SC_SliderHandle
         return opt
 
-    def handleMousePress(self, pos, val):
+    def hitHandle(self, pos, val):
         # If chosen slider at edge, treat it as non-interactive.
-        if val in (self.minimum(), self.maximum()):
-            return QtWidgets.QStyle.SC_None
-
+        if not (self.minimum() < val < self.maximum()):
+            return False
         opt = self.getStyleOptionSlider(val)
         control = self.style().hitTestComplexControl(
             QtWidgets.QStyle.CC_Slider, opt, pos, self)
-        sr = self.style().subControlRect(QtWidgets.QStyle.CC_Slider, opt,
-                                         QtWidgets.QStyle.SC_SliderHandle,
-                                         self)
-        if control == QtWidgets.QStyle.SC_SliderHandle:
-            # no pick()- slider orientation static
-            self.offset = pos.x() - sr.topLeft().x()
-            self.setSliderDown(True)
-            # Needed?
-            self.update(sr)
-            return True
-
-    def drawHandle(self, painter, val):
-        opt = self.getStyleOptionSlider(val)
-        painter.drawComplexControl(QtWidgets.QStyle.CC_Slider, opt)
+        if control != QtWidgets.QStyle.SC_SliderHandle:
+            return False
+        sr = self.style().subControlRect(
+            QtWidgets.QStyle.CC_Slider, opt,
+            QtWidgets.QStyle.SC_SliderHandle, self)
+        self.offset = pos.x() - sr.topLeft().x()
+        self.setSliderDown(True)
+        # Needed?
+        self.update(sr)
+        return True
 
     def setStartPosition(self, val):
         if val == self.startVal:
@@ -166,9 +165,9 @@ class ScanSlider(QtWidgets.QSlider):
             ev.ignore()
             return
         # Prefer stopVal in the default case.
-        if self.handleMousePress(ev.pos(), self.stopVal):
+        if self.hitHandle(ev.pos(), self.stopVal):
             self.pressed = "stop"
-        elif self.handleMousePress(ev.pos(), self.startVal):
+        elif self.hitHandle(ev.pos(), self.startVal):
             self.pressed = "start"
         else:
             self.pressed = None
@@ -215,25 +214,16 @@ class ScanSlider(QtWidgets.QSlider):
         self.pressed = None
 
     def paintEvent(self, ev):
-        # Use QStylePainters to make redrawing as painless as possible.
-        # Paint on the custom widget, using the attributes of the fake
-        # slider references we keep around. setStyleSheet within paintEvent
-        # leads to heavy performance penalties (and recursion?).
-        # QPalettes would be nicer to use, since palette entries can be set
-        # individually for each slider handle, but Windows 7 does not
-        # use them. This seems to be the only way to override the colors
-        # regardless of platform.
-
-        # Handles
-        # Qt will snap sliders to 0 or maximum() if given a desired pixel
-        # location outside the mapped range. So we manually just don't draw
-        # the handles if they are at 0 or max.
+        # Use the pre-parsed, styled sliders.
+        startPainter = QtWidgets.QStylePainter(self, self.dummyStartSlider)
+        stopPainter = QtWidgets.QStylePainter(self, self.dummyStopSlider)
+        # Only draw handles that are not railed
         if self.minimum() < self.startVal < self.maximum():
-            startPainter = QtWidgets.QStylePainter(self, self.dummyStartSlider)
-            self.drawHandle(startPainter, self.startVal)
+            opt = self.getStyleOptionSlider(self.startVal)
+            startPainter.drawComplexControl(QtWidgets.QStyle.CC_Slider, opt)
         if self.minimum() < self.stopVal < self.maximum():
-            stopPainter = QtWidgets.QStylePainter(self, self.dummyStopSlider)
-            self.drawHandle(stopPainter, self.stopVal)
+            opt = self.getStyleOptionSlider(self.stopVal)
+            stopPainter.drawComplexControl(QtWidgets.QStyle.CC_Slider, opt)
 
 
 # real (Sliders) => pixel (one pixel movement of sliders would increment by X)
