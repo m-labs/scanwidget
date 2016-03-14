@@ -68,7 +68,7 @@ class ScanSlider(QtWidgets.QSlider):
         self.position = None
         self.pressed = None
 
-        self.setRange(0, 4095)
+        self.setRange(0, (1 << 15) - 1)
 
         # We need fake sliders to keep around so that we can dynamically
         # set the stylesheets for drawing each slider later. See paintEvent.
@@ -83,7 +83,6 @@ class ScanSlider(QtWidgets.QSlider):
         self.dummyStopSlider.setStyleSheet(
             "QSlider::handle {background:red}")
 
-    # We get the range of each slider separately.
     def pixelPosToRangeValue(self, pos):
         opt = QtWidgets.QStyleOptionSlider()
         self.initStyleOption(opt)
@@ -367,27 +366,28 @@ class ScanWidget(QtWidgets.QWidget):
 
     def wheelEvent(self, ev):
         y = ev.angleDelta().y()
-        if y:
-            if ev.modifiers() & QtCore.Qt.ShiftModifier:
-                # If shift+scroll, modify number of points.
-                # TODO: This is not perfect. For high-resolution touchpads you
-                # get many small events with y < 120 which should accumulate.
-                # That would also match the wheel behavior of an integer
-                # spinbox.
-                z = int(y / 120.)
+        if ev.modifiers() & QtCore.Qt.ShiftModifier:
+            # If shift+scroll, modify number of points.
+            # TODO: This is not perfect. For high-resolution touchpads you
+            # get many small events with y < 120 which should accumulate.
+            # That would also match the wheel behavior of an integer
+            # spinbox.
+            z = int(y / 120.)
+            if z:
                 self.setNumPoints(max(1, self.numPoints + z))
-                ev.accept()
-            elif ev.modifiers() & QtCore.Qt.ControlModifier:
+            ev.accept()
+        elif ev.modifiers() & QtCore.Qt.ControlModifier:
+            # Remove the slider-handle shift correction, b/c none of the
+            # other widgets know about it. If we have the mouse directly
+            # over a tick during a zoom, it should appear as if we are
+            # doing zoom relative to the ticks which live in axis
+            # pixel-space, not slider pixel-space.
+            if y:
                 z = self.zoomFactor**(y / 120.)
-                # Remove the slider-handle shift correction, b/c none of the
-                # other widgets know about it. If we have the mouse directly
-                # over a tick during a zoom, it should appear as if we are
-                # doing zoom relative to the ticks which live in axis
-                # pixel-space, not slider pixel-space.
                 self.handleZoom(z, ev.x() - self.slider.handleWidth()/2)
-                ev.accept()
-            else:
-                ev.ignore()
+            ev.accept()
+        else:
+            ev.ignore()
 
     def eventFilter(self, obj, ev):
         if ev.type() == QtCore.QEvent.Wheel:
