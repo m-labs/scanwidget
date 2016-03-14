@@ -67,7 +67,6 @@ class ScanSlider(QtWidgets.QSlider):
         self.offset = None
         self.position = None
         self.pressed = None
-        self.firstMovement = False  # State var for handling slider overlap.
 
         self.setRange(0, 4095)
 
@@ -174,7 +173,6 @@ class ScanSlider(QtWidgets.QSlider):
         if ev.buttons() ^ ev.button():
             ev.ignore()
             return
-
         # Prefer stopVal in the default case.
         if self.handleMousePress(ev.pos(), self.stopVal, "stop"):
             self.pressed = "stop"
@@ -182,9 +180,6 @@ class ScanSlider(QtWidgets.QSlider):
             self.pressed = "start"
         else:
             self.pressed = None
-
-        # State that is needed to handle the case where two sliders are equal.
-        self.firstMovement = True
         ev.accept()
 
     def mouseMoveEvent(self, ev):
@@ -205,14 +200,6 @@ class ScanSlider(QtWidgets.QSlider):
             r = self.rect().adjusted(-m, -m, m, m)
             if not r.contains(ev.pos()):
                 newPos = self.position
-
-        if self.firstMovement:
-            if self.startVal == self.stopVal:
-                # StopSlider is preferred, except in the case where
-                # start == max possible value the slider can take.
-                if self.startVal == self.maximum():
-                    self.pressed = "start"
-                self.firstMovement = False
 
         if self.pressed == "start":
             self.setStartPosition(newPos)
