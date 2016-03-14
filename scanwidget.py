@@ -121,7 +121,7 @@ class ScanSlider(QtWidgets.QSlider):
                                          self)
         return gr.width() - self.handleWidth()
 
-    def getStyleOptionSlider(self, val):
+    def _getStyleOptionSlider(self, val):
         opt = QtWidgets.QStyleOptionSlider()
         self.initStyleOption(opt)
         opt.sliderPosition = val
@@ -129,11 +129,11 @@ class ScanSlider(QtWidgets.QSlider):
         opt.subControls = QtWidgets.QStyle.SC_SliderHandle
         return opt
 
-    def hitHandle(self, pos, val):
+    def _hitHandle(self, pos, val):
         # If chosen slider at edge, treat it as non-interactive.
         if not (self.minimum() < val < self.maximum()):
             return False
-        opt = self.getStyleOptionSlider(val)
+        opt = self._getStyleOptionSlider(val)
         control = self.style().hitTestComplexControl(
             QtWidgets.QStyle.CC_Slider, opt, pos, self)
         if control != QtWidgets.QStyle.SC_SliderHandle:
@@ -164,9 +164,9 @@ class ScanSlider(QtWidgets.QSlider):
             ev.ignore()
             return
         # Prefer stopVal in the default case.
-        if self.hitHandle(ev.pos(), self.stopVal):
+        if self._hitHandle(ev.pos(), self.stopVal):
             self.pressed = "stop"
-        elif self.hitHandle(ev.pos(), self.startVal):
+        elif self._hitHandle(ev.pos(), self.startVal):
             self.pressed = "start"
         else:
             self.pressed = None
@@ -218,10 +218,10 @@ class ScanSlider(QtWidgets.QSlider):
         stopPainter = QtWidgets.QStylePainter(self, self.dummyStopSlider)
         # Only draw handles that are not railed
         if self.minimum() < self.startVal < self.maximum():
-            opt = self.getStyleOptionSlider(self.startVal)
+            opt = self._getStyleOptionSlider(self.startVal)
             startPainter.drawComplexControl(QtWidgets.QStyle.CC_Slider, opt)
         if self.minimum() < self.stopVal < self.maximum():
-            opt = self.getStyleOptionSlider(self.stopVal)
+            opt = self._getStyleOptionSlider(self.stopVal)
             stopPainter.drawComplexControl(QtWidgets.QStyle.CC_Slider, opt)
 
 
@@ -266,8 +266,8 @@ class ScanWidget(QtWidgets.QWidget):
         # Connect event observers.
         axis.installEventFilter(self)
         slider.installEventFilter(self)
-        slider.sigStopMoved.connect(self.handleStopMoved)
-        slider.sigStartMoved.connect(self.handleStartMoved)
+        slider.sigStopMoved.connect(self._handleStopMoved)
+        slider.sigStartMoved.connect(self._handleStartMoved)
 
     def contextMenuEvent(self, ev):
         self.menu.popup(ev.globalPos())
@@ -325,27 +325,6 @@ class ScanWidget(QtWidgets.QWidget):
         self.axis.update()
         self.sigNumChanged.emit(val)
 
-    def handleStopMoved(self, rangeVal):
-        val = self.rangeToReal(rangeVal)
-        self.realStop = val
-        self.axis.update()
-        self.sigStopMoved.emit(val)
-
-    def handleStartMoved(self, rangeVal):
-        val = self.rangeToReal(rangeVal)
-        self.realStart = val
-        self.axis.update()
-        self.sigStartMoved.emit(val)
-
-    def handleZoom(self, zoomFactor, mouseXPos):
-        newScale = self.realToPixelTransform[1] * zoomFactor
-        refReal = self.pixelToReal(mouseXPos)
-        newLeft = refReal - mouseXPos/newScale
-        newZero = newLeft*newScale + self.slider.effectiveWidth()/2
-        if zoomFactor > 1 and abs(newZero) > self.dynamicRange:
-            return
-        self.setView(newLeft, newScale)
-
     def viewRange(self):
         newScale = self.slider.effectiveWidth()/abs(
             self.realStop - self.realStart)
@@ -364,7 +343,28 @@ class ScanWidget(QtWidgets.QWidget):
         self.setStart(newStart)
         self.setStop(newStop)
 
-    def wheelEvent(self, ev):
+    def _handleStartMoved(self, rangeVal):
+        val = self.rangeToReal(rangeVal)
+        self.realStart = val
+        self.axis.update()
+        self.sigStartMoved.emit(val)
+
+    def _handleStopMoved(self, rangeVal):
+        val = self.rangeToReal(rangeVal)
+        self.realStop = val
+        self.axis.update()
+        self.sigStopMoved.emit(val)
+
+    def _handleZoom(self, zoomFactor, mouseXPos):
+        newScale = self.realToPixelTransform[1] * zoomFactor
+        refReal = self.pixelToReal(mouseXPos)
+        newLeft = refReal - mouseXPos/newScale
+        newZero = newLeft*newScale + self.slider.effectiveWidth()/2
+        if zoomFactor > 1 and abs(newZero) > self.dynamicRange:
+            return
+        self.setView(newLeft, newScale)
+
+    def _wheelEvent(self, ev):
         y = ev.angleDelta().y()
         if ev.modifiers() & QtCore.Qt.ShiftModifier:
             # If shift+scroll, modify number of points.
@@ -384,14 +384,14 @@ class ScanWidget(QtWidgets.QWidget):
             # pixel-space, not slider pixel-space.
             if y:
                 z = self.zoomFactor**(y / 120.)
-                self.handleZoom(z, ev.x() - self.slider.handleWidth()/2)
+                self._handleZoom(z, ev.x() - self.slider.handleWidth()/2)
             ev.accept()
         else:
             ev.ignore()
 
     def eventFilter(self, obj, ev):
         if ev.type() == QtCore.QEvent.Wheel:
-            self.wheelEvent(ev)
+            self._wheelEvent(ev)
             return True
         if not (obj is self.axis and ev.type() == QtCore.QEvent.Resize):
             return False
