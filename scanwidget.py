@@ -66,8 +66,7 @@ class ScanSlider(QtWidgets.QSlider):
         self.stopVal = None
         self.offset = None
         self.position = None
-        self.stopPressed = QtWidgets.QStyle.SC_None
-        self.startPressed = QtWidgets.QStyle.SC_None
+        self.pressed = None
         self.firstMovement = False  # State var for handling slider overlap.
 
         self.setRange(0, 4095)
@@ -134,26 +133,25 @@ class ScanSlider(QtWidgets.QSlider):
                                          self)
         return gr.width() - self.handleWidth()
 
-    def handleMousePress(self, pos, control, val, handle):
+    def handleMousePress(self, pos, val, handle):
         # If chosen slider at edge, treat it as non-interactive.
         v = self.startVal if handle == "start" else self.stopVal
         if v in (self.minimum(), self.maximum()):
             return QtWidgets.QStyle.SC_None
 
         opt = self.initHandleStyleOption(handle)
-        newControl = self.style().hitTestComplexControl(
+        control = self.style().hitTestComplexControl(
             QtWidgets.QStyle.CC_Slider, opt, pos, self)
         sr = self.style().subControlRect(QtWidgets.QStyle.CC_Slider, opt,
                                          QtWidgets.QStyle.SC_SliderHandle,
                                          self)
-        if newControl == QtWidgets.QStyle.SC_SliderHandle:
+        if control == QtWidgets.QStyle.SC_SliderHandle:
             # no pick()- slider orientation static
             self.offset = pos.x() - sr.topLeft().x()
             self.setSliderDown(True)
-        # Needed?
-        if newControl != control:
+            # Needed?
             self.update(sr)
-        return newControl
+            return True
 
     def drawHandle(self, painter, handle):
         opt = self.initHandleStyleOption(handle)
@@ -178,19 +176,19 @@ class ScanSlider(QtWidgets.QSlider):
             return
 
         # Prefer stopVal in the default case.
-        self.stopPressed = self.handleMousePress(
-            ev.pos(), self.stopPressed, self.stopVal, "stop")
-        if self.stopPressed != QtWidgets.QStyle.SC_SliderHandle:
-            self.startPressed = self.handleMousePress(
-                ev.pos(), self.stopPressed, self.startVal, "start")
+        if self.handleMousePress(ev.pos(), self.stopVal, "stop"):
+            self.pressed = "stop"
+        elif self.handleMousePress(ev.pos(), self.startVal, "start"):
+            self.pressed = "start"
+        else:
+            self.pressed = None
 
         # State that is needed to handle the case where two sliders are equal.
         self.firstMovement = True
         ev.accept()
 
     def mouseMoveEvent(self, ev):
-        if (self.startPressed != QtWidgets.QStyle.SC_SliderHandle and
-                self.stopPressed != QtWidgets.QStyle.SC_SliderHandle):
+        if not self.pressed:
             ev.ignore()
             return
 
@@ -213,16 +211,14 @@ class ScanSlider(QtWidgets.QSlider):
                 # StopSlider is preferred, except in the case where
                 # start == max possible value the slider can take.
                 if self.startVal == self.maximum():
-                    self.startPressed = QtWidgets.QStyle.SC_SliderHandle
-                    self.stopPressed = QtWidgets.QStyle.SC_None
+                    self.pressed = "start"
                 self.firstMovement = False
 
-        if self.startPressed == QtWidgets.QStyle.SC_SliderHandle:
+        if self.pressed == "start":
             self.setStartPosition(newPos)
             if self.hasTracking():
                 self.sigStartMoved.emit(self.startVal)
-
-        if self.stopPressed == QtWidgets.QStyle.SC_SliderHandle:
+        elif self.pressed == "stop":
             self.setStopPosition(newPos)
             if self.hasTracking():
                 self.sigStopMoved.emit(self.stopVal)
@@ -233,12 +229,11 @@ class ScanSlider(QtWidgets.QSlider):
         QtWidgets.QSlider.mouseReleaseEvent(self, ev)
         self.setSliderDown(False)  # AbstractSlider needs this
         if not self.hasTracking():
-            if self.startPressed == QtWidgets.QStyle.SC_SliderHandle:
+            if self.pressed == "start":
                 self.sigStartMoved.emit(self.startVal)
-            if self.stopPressed == QtWidgets.QStyle.SC_SliderHandle:
+            elif self.pressed == "stop":
                 self.sigStopMoved.emit(self.stopVal)
-        self.startPressed = QtWidgets.QStyle.SC_None
-        self.stopPressed = QtWidgets.QStyle.SC_None
+        self.pressed = None
 
     def paintEvent(self, ev):
         # Use QStylePainters to make redrawing as painless as possible.
