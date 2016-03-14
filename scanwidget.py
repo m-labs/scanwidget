@@ -79,20 +79,6 @@ class ScanSlider(QtWidgets.QSlider):
         self.dummyStopSlider.setStyleSheet(
             "QSlider::handle {background:red}")
 
-    # We basically superimpose two QSliders on top of each other, discarding
-    # the state that remains constant between the two when drawing.
-    # Everything except the handles remain constant.
-    def initHandleStyleOption(self, handle):
-        opt = QtWidgets.QStyleOptionSlider()
-        self.initStyleOption(opt)
-        if handle == "start":
-            opt.sliderPosition = self.startVal
-            opt.sliderValue = self.startVal
-        elif handle == "stop":
-            opt.sliderPosition = self.stopVal
-            opt.sliderValue = self.stopVal
-        return opt
-
     # We get the range of each slider separately.
     def pixelPosToRangeValue(self, pos):
         opt = QtWidgets.QStyleOptionSlider()
@@ -132,13 +118,20 @@ class ScanSlider(QtWidgets.QSlider):
                                          self)
         return gr.width() - self.handleWidth()
 
-    def handleMousePress(self, pos, val, handle):
+    def getStyleOptionSlider(self, val):
+        opt = QtWidgets.QStyleOptionSlider()
+        self.initStyleOption(opt)
+        opt.sliderPosition = val
+        opt.sliderValue = val
+        opt.subControls = QtWidgets.QStyle.SC_SliderHandle
+        return opt
+
+    def handleMousePress(self, pos, val):
         # If chosen slider at edge, treat it as non-interactive.
-        v = self.startVal if handle == "start" else self.stopVal
-        if v in (self.minimum(), self.maximum()):
+        if val in (self.minimum(), self.maximum()):
             return QtWidgets.QStyle.SC_None
 
-        opt = self.initHandleStyleOption(handle)
+        opt = self.getStyleOptionSlider(val)
         control = self.style().hitTestComplexControl(
             QtWidgets.QStyle.CC_Slider, opt, pos, self)
         sr = self.style().subControlRect(QtWidgets.QStyle.CC_Slider, opt,
@@ -152,9 +145,8 @@ class ScanSlider(QtWidgets.QSlider):
             self.update(sr)
             return True
 
-    def drawHandle(self, painter, handle):
-        opt = self.initHandleStyleOption(handle)
-        opt.subControls = QtWidgets.QStyle.SC_SliderHandle
+    def drawHandle(self, painter, val):
+        opt = self.getStyleOptionSlider(val)
         painter.drawComplexControl(QtWidgets.QStyle.CC_Slider, opt)
 
     def setStartPosition(self, val):
@@ -174,9 +166,9 @@ class ScanSlider(QtWidgets.QSlider):
             ev.ignore()
             return
         # Prefer stopVal in the default case.
-        if self.handleMousePress(ev.pos(), self.stopVal, "stop"):
+        if self.handleMousePress(ev.pos(), self.stopVal):
             self.pressed = "stop"
-        elif self.handleMousePress(ev.pos(), self.startVal, "start"):
+        elif self.handleMousePress(ev.pos(), self.startVal):
             self.pressed = "start"
         else:
             self.pressed = None
@@ -231,17 +223,17 @@ class ScanSlider(QtWidgets.QSlider):
         # individually for each slider handle, but Windows 7 does not
         # use them. This seems to be the only way to override the colors
         # regardless of platform.
-        startPainter = QtWidgets.QStylePainter(self, self.dummyStartSlider)
-        stopPainter = QtWidgets.QStylePainter(self, self.dummyStopSlider)
 
         # Handles
         # Qt will snap sliders to 0 or maximum() if given a desired pixel
         # location outside the mapped range. So we manually just don't draw
         # the handles if they are at 0 or max.
         if self.minimum() < self.startVal < self.maximum():
-            self.drawHandle(startPainter, "start")
+            startPainter = QtWidgets.QStylePainter(self, self.dummyStartSlider)
+            self.drawHandle(startPainter, self.startVal)
         if self.minimum() < self.stopVal < self.maximum():
-            self.drawHandle(stopPainter, "stop")
+            stopPainter = QtWidgets.QStylePainter(self, self.dummyStopSlider)
+            self.drawHandle(stopPainter, self.stopVal)
 
 
 # real (Sliders) => pixel (one pixel movement of sliders would increment by X)
