@@ -181,21 +181,23 @@ class ScanSlider(QtWidgets.QSlider):
 
 # real (Sliders) => pixel (one pixel movement of sliders would increment by X)
 # => range (minimum granularity that sliders understand).
-class ScanWidget(QtWidgets.QWidget):
+class ScanWidget(QtWidgets.QAbstractSlider):
     sigStartMoved = QtCore.pyqtSignal(float)
     sigStopMoved = QtCore.pyqtSignal(float)
     sigNumChanged = QtCore.pyqtSignal(int)
 
     def __init__(self, zoomFactor=1.05, zoomMargin=.1, dynamicRange=1e9):
-        QtWidgets.QWidget.__init__(self)
+        QtWidgets.QAbstractSlider.__init__(self)
         self.ticker = Ticker()
         self.slider = slider = ScanSlider()
+        self.slider.setParent(self)
+        qfm = QtGui.QFontMetrics(QtGui.QFont())
+        lineSpacing = qfm.lineSpacing()
+        ascent = qfm.ascent()
+        height = qfm.height()
 
-        # Layout.
-        layout = QtWidgets.QVBoxLayout()
-        layout.setSpacing(0)
-        layout.addWidget(slider)
-        self.setLayout(layout)
+        self.slider.setGeometry(QtCore.QRect(0, ascent + lineSpacing + height,
+                                self.width(), 20))
 
         # Context menu entries
         self.menu = QtWidgets.QMenu(self)
@@ -363,6 +365,7 @@ class ScanWidget(QtWidgets.QWidget):
         ascent = qfm.ascent()
         height = qfm.height()
         painter.setRenderHint(QtGui.QPainter.Antialiasing)
+
         # The center of the slider handles should reflect what's displayed
         # on the spinboxes.
         painter.translate(self.slider.handleWidth()/2, ascent)
@@ -375,14 +378,14 @@ class ScanWidget(QtWidgets.QWidget):
         pen.setWidth(2)
         painter.setPen(pen)
 
-        painter.translate(0, lineSpacing)
+        painter.translate(0, lineSpacing)  # Move down to the next baseline.
         for t, l in zip(ticks, labels):
             t = self.realToPixel(t)
             painter.drawLine(t, descent, t, height/2)
             painter.drawText(t - len(l)/2*avgCharWidth, 0, l)
         painter.drawLine(0, height/2, self.width(), height/2)
 
-        painter.translate(0, height)
+        painter.translate(0, height)  # Arbitrary
         sliderStartPixel = self.realToPixel(self.realStart)
         sliderStopPixel = self.realToPixel(self.realStop)
         pixels = linspace(sliderStartPixel, sliderStopPixel,
@@ -390,6 +393,7 @@ class ScanWidget(QtWidgets.QWidget):
         for p in pixels:
             p_int = int(p)
             painter.drawLine(p_int, 0, p_int, -height/2)
+
         ev.accept()
 
     def eventFilter(self, obj, ev):
