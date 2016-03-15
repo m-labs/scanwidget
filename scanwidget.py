@@ -191,13 +191,6 @@ class ScanWidget(QtWidgets.QAbstractSlider):
         self.ticker = Ticker()
         self.slider = slider = ScanSlider()
         self.slider.setParent(self)
-        qfm = QtGui.QFontMetrics(QtGui.QFont())
-        lineSpacing = qfm.lineSpacing()
-        ascent = qfm.ascent()
-        height = qfm.height()
-
-        self.slider.setGeometry(QtCore.QRect(0, ascent + lineSpacing + height,
-                                self.width(), 20))
 
         # Context menu entries
         self.menu = QtWidgets.QMenu(self)
@@ -317,6 +310,14 @@ class ScanWidget(QtWidgets.QAbstractSlider):
             return
         self.setView(newLeft, newScale)
 
+    def _setSliderGeometry(self):
+        qfm = QtGui.QFontMetrics(QtGui.QFont())
+        lineSpacing = qfm.lineSpacing()
+        ascent = qfm.ascent()
+        height = qfm.height()
+        self.slider.setGeometry(QtCore.QRect(0, ascent + lineSpacing + height,
+                                self.width(), 20))
+
     def wheelEvent(self, ev):
         y = ev.angleDelta().y()
         if ev.modifiers() & QtCore.Qt.ShiftModifier:
@@ -330,11 +331,9 @@ class ScanWidget(QtWidgets.QAbstractSlider):
                 self.setNumPoints(max(1, self.numPoints + z))
             ev.accept()
         elif ev.modifiers() & QtCore.Qt.ControlModifier:
-            # Remove the slider-handle shift correction, b/c none of the
-            # other widgets know about it. If we have the mouse directly
-            # over a tick during a zoom, it should appear as if we are
-            # doing zoom relative to the ticks which live in axis
-            # pixel-space, not slider pixel-space.
+            # If we have the mouse directly over a tick during a zoom,
+            # it should appear as if we are doing zoom relative to the
+            # ticks which live in axis pixel-space, not slider pixel-space.
             if y:
                 z = self.zoomFactor**(y / 120.)
                 self._handleZoom(z, ev.x() - self.slider.handleWidth()/2)
@@ -345,15 +344,17 @@ class ScanWidget(QtWidgets.QAbstractSlider):
     def resizeEvent(self, ev):
         if ev.oldSize().isValid():
             oldLeft = self.pixelToReal(0)
-            refWidth = ev.oldSize().width()
+            refWidth = ev.oldSize().width() - self.slider.handleWidth()
             refRight = self.pixelToReal(refWidth)
-            newWidth = ev.size().width()
+            newWidth = ev.size().width() - self.slider.handleWidth()
             newScale = newWidth/(refRight - oldLeft)
             center = (self.realStop + self.realStart)/2
             if center:
                 newScale = min(newScale, self.dynamicRange/abs(center))
+            self._setSliderGeometry()
             self.setView(oldLeft, newScale)
         else:
+            self._setSliderGeometry()
             self.viewRange()
 
     def paintEvent(self, ev):
