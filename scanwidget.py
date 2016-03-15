@@ -178,6 +178,9 @@ class ScanSlider(QtWidgets.QSlider):
             opt = self._getStyleOptionSlider(self.stopVal)
             stopPainter.drawComplexControl(QtWidgets.QStyle.CC_Slider, opt)
 
+    def wheelEvent(self, ev):
+        ev.ignore()
+
 
 # real (Sliders) => pixel (one pixel movement of sliders would increment by X)
 # => range (minimum granularity that sliders understand).
@@ -211,7 +214,6 @@ class ScanWidget(QtWidgets.QAbstractSlider):
         self.realToPixelTransform = -self.width()/2, 1.
 
         # Connect event observers.
-        slider.installEventFilter(self)
         slider.sigStopMoved.connect(self._handleStopMoved)
         slider.sigStartMoved.connect(self._handleStartMoved)
 
@@ -396,9 +398,3 @@ class ScanWidget(QtWidgets.QAbstractSlider):
             painter.drawLine(p_int, 0, p_int, -height/2)
 
         ev.accept()
-
-    def eventFilter(self, obj, ev):
-        if ev.type() in (QtCore.QEvent.Wheel, QtCore.QEvent.Resize):
-            ev.ignore()
-            return True
-        return False
