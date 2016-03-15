@@ -9,52 +9,6 @@ from ticker import Ticker
 logger = logging.getLogger(__name__)
 
 
-class ScanAxis(QtWidgets.QWidget):
-    def __init__(self):
-        QtWidgets.QWidget.__init__(self)
-        self.proxy = None
-        self.sizePolicy().setControlType(QtWidgets.QSizePolicy.ButtonBox)
-        self.ticker = Ticker()
-        qfm = QtGui.QFontMetrics(QtGui.QFont())
-        lineSpacing = qfm.lineSpacing()
-        descent = qfm.descent()
-        self.setMinimumHeight(2*lineSpacing + descent + 5 + 5)
-
-    def paintEvent(self, ev):
-        painter = QtGui.QPainter(self)
-        qfm = QtGui.QFontMetrics(painter.font())
-        avgCharWidth = qfm.averageCharWidth()
-        lineSpacing = qfm.lineSpacing()
-        descent = qfm.descent()
-        painter.setRenderHint(QtGui.QPainter.Antialiasing)
-        # The center of the slider handles should reflect what's displayed
-        # on the spinboxes.
-        painter.translate(self.proxy.slider.handleWidth()/2, self.height() - 5)
-        painter.drawLine(0, 0, self.width(), 0)
-        realLeft = self.proxy.pixelToReal(0)
-        realRight = self.proxy.pixelToReal(self.width())
-        ticks, prefix, labels = self.ticker(realLeft, realRight)
-        painter.drawText(0, -5-descent-lineSpacing, prefix)
-
-        pen = QtGui.QPen()
-        pen.setWidth(2)
-        painter.setPen(pen)
-
-        for t, l in zip(ticks, labels):
-            t = self.proxy.realToPixel(t)
-            painter.drawLine(t, 0, t, -5)
-            painter.drawText(t - len(l)/2*avgCharWidth, -5-descent, l)
-
-        sliderStartPixel = self.proxy.realToPixel(self.proxy.realStart)
-        sliderStopPixel = self.proxy.realToPixel(self.proxy.realStop)
-        pixels = linspace(sliderStartPixel, sliderStopPixel,
-                          self.proxy.numPoints)
-        for p in pixels:
-            p_int = int(p)
-            painter.drawLine(p_int, 0, p_int, 5)
-        ev.accept()
-
-
 # Basic ideas from https://gist.github.com/Riateche/27e36977f7d5ea72cf4f
 class ScanSlider(QtWidgets.QSlider):
     sigStartMoved = QtCore.pyqtSignal(int)
@@ -234,14 +188,12 @@ class ScanWidget(QtWidgets.QWidget):
 
     def __init__(self, zoomFactor=1.05, zoomMargin=.1, dynamicRange=1e9):
         QtWidgets.QWidget.__init__(self)
+        self.ticker = Ticker()
         self.slider = slider = ScanSlider()
-        self.axis = axis = ScanAxis()
-        axis.proxy = self
 
         # Layout.
         layout = QtWidgets.QVBoxLayout()
         layout.setSpacing(0)
-        layout.addWidget(axis)
         layout.addWidget(slider)
         self.setLayout(layout)
 
@@ -261,10 +213,9 @@ class ScanWidget(QtWidgets.QWidget):
         self.dynamicRange = dynamicRange
         self.zoomFactor = zoomFactor
 
-        self.realToPixelTransform = -self.axis.width()/2, 1.
+        self.realToPixelTransform = -self.width()/2, 1.
 
         # Connect event observers.
-        axis.installEventFilter(self)
         slider.installEventFilter(self)
         slider.sigStopMoved.connect(self._handleStopMoved)
         slider.sigStartMoved.connect(self._handleStartMoved)
@@ -298,7 +249,7 @@ class ScanWidget(QtWidgets.QWidget):
         self.slider.setStopPosition(sliderX)
         sliderX = self.realToRange(self.realStart)
         self.slider.setStartPosition(sliderX)
-        self.axis.update()
+        self.update()
 
     def setStop(self, val):
         if self.realStop == val:
@@ -306,7 +257,7 @@ class ScanWidget(QtWidgets.QWidget):
         sliderX = self.realToRange(val)
         self.slider.setStopPosition(sliderX)
         self.realStop = val
-        self.axis.update()  # Number of points ticks changed positions.
+        self.update()  # Number of points ticks changed positions.
         self.sigStopMoved.emit(val)
 
     def setStart(self, val):
@@ -315,14 +266,14 @@ class ScanWidget(QtWidgets.QWidget):
         sliderX = self.realToRange(val)
         self.slider.setStartPosition(sliderX)
         self.realStart = val
-        self.axis.update()
+        self.update()
         self.sigStartMoved.emit(val)
 
     def setNumPoints(self, val):
         if self.numPoints == val:
             return
         self.numPoints = val
-        self.axis.update()
+        self.update()
         self.sigNumChanged.emit(val)
 
     def viewRange(self):
@@ -346,13 +297,13 @@ class ScanWidget(QtWidgets.QWidget):
     def _handleStartMoved(self, rangeVal):
         val = self.rangeToReal(rangeVal)
         self.realStart = val
-        self.axis.update()
+        self.update()
         self.sigStartMoved.emit(val)
 
     def _handleStopMoved(self, rangeVal):
         val = self.rangeToReal(rangeVal)
         self.realStop = val
-        self.axis.update()
+        self.update()
         self.sigStopMoved.emit(val)
 
     def _handleZoom(self, zoomFactor, mouseXPos):
@@ -392,9 +343,9 @@ class ScanWidget(QtWidgets.QWidget):
     def resizeEvent(self, ev):
         if ev.oldSize().isValid():
             oldLeft = self.pixelToReal(0)
-            refWidth = ev.oldSize().width() - self.slider.handleWidth()
+            refWidth = ev.oldSize().width()
             refRight = self.pixelToReal(refWidth)
-            newWidth = ev.size().width() - self.slider.handleWidth()
+            newWidth = ev.size().width()
             newScale = newWidth/(refRight - oldLeft)
             center = (self.realStop + self.realStart)/2
             if center:
@@ -402,6 +353,44 @@ class ScanWidget(QtWidgets.QWidget):
             self.setView(oldLeft, newScale)
         else:
             self.viewRange()
+
+    def paintEvent(self, ev):
+        painter = QtGui.QPainter(self)
+        qfm = QtGui.QFontMetrics(painter.font())
+        avgCharWidth = qfm.averageCharWidth()
+        lineSpacing = qfm.lineSpacing()
+        descent = qfm.descent()
+        ascent = qfm.ascent()
+        height = qfm.height()
+        painter.setRenderHint(QtGui.QPainter.Antialiasing)
+        # The center of the slider handles should reflect what's displayed
+        # on the spinboxes.
+        painter.translate(self.slider.handleWidth()/2, ascent)
+        realLeft = self.pixelToReal(0)
+        realRight = self.pixelToReal(self.width())
+        ticks, prefix, labels = self.ticker(realLeft, realRight)
+        painter.drawText(0, 0, prefix)
+
+        pen = QtGui.QPen()
+        pen.setWidth(2)
+        painter.setPen(pen)
+
+        painter.translate(0, lineSpacing)
+        for t, l in zip(ticks, labels):
+            t = self.realToPixel(t)
+            painter.drawLine(t, descent, t, height/2)
+            painter.drawText(t - len(l)/2*avgCharWidth, 0, l)
+        painter.drawLine(0, height/2, self.width(), height/2)
+
+        painter.translate(0, height)
+        sliderStartPixel = self.realToPixel(self.realStart)
+        sliderStopPixel = self.realToPixel(self.realStop)
+        pixels = linspace(sliderStartPixel, sliderStopPixel,
+                          self.numPoints)
+        for p in pixels:
+            p_int = int(p)
+            painter.drawLine(p_int, 0, p_int, -height/2)
+        ev.accept()
 
     def eventFilter(self, obj, ev):
         if ev.type() in (QtCore.QEvent.Wheel, QtCore.QEvent.Resize):
