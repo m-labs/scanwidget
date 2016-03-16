@@ -2,7 +2,7 @@ import asyncio
 import atexit
 import logging
 
-from quamash import QApplication, QEventLoop, QtWidgets
+from quamash import QtCore, QApplication, QEventLoop, QtWidgets
 
 from scanwidget import ScanWidget
 from scientific_spinbox import ScientificSpinBox
@@ -31,9 +31,11 @@ def main():
     container.setLayout(layout)
 
     scanner = ScanWidget()
+    scanner.setFocusPolicy(QtCore.Qt.StrongFocus)
     layout.addWidget(scanner, 0, 0, -1, 1)
 
     spinbox = ScientificSpinBox()
+    spinbox.setFocusPolicy(QtCore.Qt.StrongFocus)
     spinbox.setStyleSheet("QDoubleSpinBox {color:blue}")
     spinbox.setMinimumSize(110, 0)
     layout.addWidget(spinbox, 0, 1)
@@ -41,20 +43,22 @@ def main():
     spinbox.valueChanged.connect(scanner.setStart)
     scanner.setStart(-100)
 
-    spinbox = ScientificSpinBox()
-    spinbox.setStyleSheet("QDoubleSpinBox {color:red}")
-    layout.addWidget(spinbox, 2, 1)
-    scanner.stopChanged.connect(spinbox.setValue)
-    spinbox.valueChanged.connect(scanner.setStop)
-    scanner.setStop(200)
-
     spinbox = QtWidgets.QSpinBox()
+    spinbox.setFocusPolicy(QtCore.Qt.StrongFocus)
     spinbox.setMinimum(1)
     spinbox.setMaximum((1 << 31) - 1)
     layout.addWidget(spinbox, 1, 1)
     scanner.numChanged.connect(spinbox.setValue)
     spinbox.valueChanged.connect(scanner.setNum)
     scanner.setNum(11)
+
+    spinbox = ScientificSpinBox()
+    spinbox.setFocusPolicy(QtCore.Qt.StrongFocus)
+    spinbox.setStyleSheet("QDoubleSpinBox {color:red}")
+    layout.addWidget(spinbox, 2, 1)
+    scanner.stopChanged.connect(spinbox.setValue)
+    spinbox.valueChanged.connect(scanner.setStop)
+    scanner.setStop(200)
 
     win.setCentralWidget(container)
     win.show()
