@@ -52,12 +52,7 @@ class ScanWidget(QtWidgets.QSlider):
         a, b = self._axisView
         return (val - a)/b
 
-    def _axisToSlider(self, val):
-        a, b = self._sliderView
-        return a + val*b
-
     def _setView(self, axis_left, axis_scale):
-        self._axisView = axis_left, axis_scale
         opt = QtWidgets.QStyleOptionSlider()
         self.initStyleOption(opt)
         g = self.style().subControlRect(QtWidgets.QStyle.CC_Slider, opt,
@@ -69,6 +64,8 @@ class ScanWidget(QtWidgets.QSlider):
         slider_left = g.x() + h.width()/2
         slider_scale = (self.maximum() - self.minimum())/(
             g.width() - h.width())
+
+        self._axisView = axis_left, axis_scale
         self._sliderView = ((axis_left - slider_left)*slider_scale,
                             axis_scale*slider_scale)
         self.update()
@@ -113,7 +110,8 @@ class ScanWidget(QtWidgets.QSlider):
         self.setStop(self._pixelToAxis((1 - self.zoomMargin)*self.width()))
 
     def _getStyleOptionSlider(self, val):
-        val = self._axisToSlider(val)
+        a, b = self._sliderView
+        val = a + val*b
         if not (self.minimum() <= val <= self.maximum()):
             return None
         opt = QtWidgets.QStyleOptionSlider()
