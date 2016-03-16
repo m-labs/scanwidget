@@ -3,8 +3,6 @@
 ## To Modify (Not technically broken, but needs to be changed on request)
 
 ## To Implement
-* Drag modes:
-    * shift-drag axis, groove: move both sliders (and thus all scanned points, but not the axis, analogous to shift-wheel vs wheel)
 
 ## Improvements
 * Add keyboard shortcuts for "Snap Range" (ctrl-p) and "View Range" (ctrl-i).
