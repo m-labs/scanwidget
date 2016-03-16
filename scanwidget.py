@@ -44,6 +44,9 @@ class ScanWidget(QtWidgets.QSlider):
     def contextMenuEvent(self, ev):
         self.menu.popup(ev.globalPos())
 
+    def sizeHint(self):
+        return QtCore.QSize(200, 80)
+
     def _axisToPixel(self, val):
         a, b = self._axisView
         return a + val*b
@@ -114,11 +117,18 @@ class ScanWidget(QtWidgets.QSlider):
         val = a + val*b
         if not (self.minimum() <= val <= self.maximum()):
             return None
+        painter = QtGui.QPainter()
+        qfm = QtGui.QFontMetrics(painter.font())
+        ascent = qfm.ascent()
+        height = qfm.height()
+        lineSpacing = qfm.lineSpacing()
         opt = QtWidgets.QStyleOptionSlider()
         self.initStyleOption(opt)
         opt.sliderPosition = val
         opt.sliderValue = val
         opt.subControls = QtWidgets.QStyle.SC_SliderHandle
+        opt.rect = QtCore.QRect(0, ascent + lineSpacing + height, self.width(),
+                                height)
         return opt
 
     def _hitHandle(self, pos, val):
@@ -221,8 +231,8 @@ class ScanWidget(QtWidgets.QSlider):
         height = qfm.height()
         # painter.setRenderHint(QtGui.QPainter.Antialiasing)
 
-        # TODO: make drawable area big enough and move axis higher
-        painter.translate(0, ascent - 15)
+        # TODO: move axis higher
+        painter.translate(0, ascent)
         ticks, prefix, labels = self.ticker(self._pixelToAxis(0),
                                             self._pixelToAxis(self.width()))
         painter.drawText(0, 0, prefix)
@@ -242,7 +252,6 @@ class ScanWidget(QtWidgets.QSlider):
         for p in np.linspace(self._axisToPixel(self._start),
                              self._axisToPixel(self._stop),
                              self._num):
-            # TODO: is drawing far outside the viewport dangerous?
             painter.drawLine(p, 0, p, -height/2)
 
     def _paintSliders(self):
