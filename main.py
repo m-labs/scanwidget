@@ -31,7 +31,6 @@ def main():
     container.setLayout(layout)
 
     scanner = ScanWidget()
-    scanner.setMinimumSize(300, 0)
     layout.addWidget(scanner, 0, 0, -1, 1)
 
     spinbox = ScientificSpinBox()
@@ -40,7 +39,6 @@ def main():
     layout.addWidget(spinbox, 0, 1)
     scanner.startChanged.connect(spinbox.setValue)
     spinbox.valueChanged.connect(scanner.setStart)
-    spinbox.setValue(-100)
     scanner.setStart(-100)
 
     spinbox = ScientificSpinBox()
@@ -48,15 +46,14 @@ def main():
     layout.addWidget(spinbox, 2, 1)
     scanner.stopChanged.connect(spinbox.setValue)
     spinbox.valueChanged.connect(scanner.setStop)
-    spinbox.setValue(200)
     scanner.setStop(200)
 
     spinbox = QtWidgets.QSpinBox()
+    spinbox.setMinimum(1)
     spinbox.setMaximum((1 << 31) - 1)
     layout.addWidget(spinbox, 1, 1)
     scanner.numChanged.connect(spinbox.setValue)
     spinbox.valueChanged.connect(scanner.setNum)
-    spinbox.setValue(11)
     scanner.setNum(11)
 
     win.setCentralWidget(container)
